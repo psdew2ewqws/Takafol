@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F7FBFC;
+  --foreground: #1A3A4A;
+  --takafol-blue: #7EC8E3;
+  --takafol-blue-light: #B8E2F2;
+  --takafol-blue-pale: #E8F4F8;
+  --takafol-blue-deep: #4A9BB5;
+  --takafol-accent: #2D9CDB;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', system-ui, sans-serif;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(126, 200, 227, 0.2);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(126, 200, 227, 0.3);
+}
+
+.bg-takafol-gradient {
+  background: linear-gradient(135deg, #E8F4F8 0%, #B8E2F2 50%, #7EC8E3 100%);
+}
+
+.bg-takafol-hero {
+  background: linear-gradient(160deg, #F7FBFC 0%, #E8F4F8 30%, #B8E2F2 70%, #7EC8E3 100%);
+}
+
+.proof-chain {
+  position: relative;
+}
+
+.proof-chain::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #7EC8E3, #B8E2F2);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #F7FBFC; }
+::-webkit-scrollbar-thumb { background: #B8E2F2; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #7EC8E3; }
