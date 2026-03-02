@@ -690,6 +690,18 @@ GET    /api/orgs/[id]/tasks              → Organization's tasks + progress
   - "Empowering each other — with proof."
 - **Points currency**: Impact Score
 
+### Design Theme
+- **Primary color**: Baby blue
+- **Secondary color**: White
+- **Style**: Clean, modern, trustworthy
+- **Typography**: Arabic-friendly font stack: `"IBM Plex Sans Arabic", "Noto Sans Arabic", sans-serif`
+- **Direction**: RTL support for Arabic
+
+### Reference Documents
+- **Full PRD**: `TakafolPRD_v2 Final.md` — complete product requirements
+- **Flowchart**: `flowchart.png` — full user journey diagram
+- **Pitch Deck**: `PITCH-DECK.md` — 12-slide presentation
+
 ---
 
 ## What Makes Takafol Different
