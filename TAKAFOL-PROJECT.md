@@ -304,46 +304,63 @@ Result:     TX hash → saved to tasks.tx_hash_created
 On-chain:   ✓ Task "task-001" created by "org-001", type: food, at exact time
 ```
 
-**Step 2: Volunteer Accepts**
+**Step 2: Volunteers Accept (multiple!)**
 ```
-App:        Ahmad clicks "Accept Task"
-API route:  Updates Supabase → status = "accepted", volunteer_id = "vol-001"
-            Calls contract → acceptTask("task-001", "vol-001")
-Contract:   Emits TaskAccepted("task-001", "vol-001", timestamp)
-Result:     TX hash → saved to tasks.tx_hash_accepted
-On-chain:   ✓ Task "task-001" accepted by "vol-001" at exact time
+App:        Ahmad clicks "Accept Task" → takes 3 of 50 baskets
+API route:  Creates contribution "c-001" in Supabase
+            Updates task slots_filled += 1
+            Calls contract → acceptTask("task-001", "vol-001", "c-001")
+Contract:   Emits VolunteerAccepted("task-001", "c-001", "vol-001", timestamp)
+Result:     TX hash → saved to task_contributions.tx_hash_accepted
+On-chain:   ✓ Volunteer "vol-001" accepted slot on task "task-001"
+
+App:        Sara also clicks "Accept Task" → takes 3 baskets
+API route:  Creates contribution "c-002"
+            Calls contract → acceptTask("task-001", "vol-002", "c-002")
+            ... same flow, her own TX hash, her own record
+
+20 volunteers can each accept a slot. Each gets their own contribution.
 ```
 
-**Step 3: Donation Recorded**
+**Step 3: Donation Recorded (per volunteer)**
 ```
 App:        Ahmad donates 10 JDs through the verified NGO
-API route:  Calls contract → recordDonation("task-001", "money", "10", "10 JDs via Jordan Aid")
-Contract:   Emits DonationRecorded("task-001", "money", "10", "10 JDs via Jordan Aid", timestamp)
-Result:     TX hash → saved to tasks.tx_hash_donation
-On-chain:   ✓ 10 JDs donated for task "task-001", via Jordan Aid
+API route:  Calls contract → recordDonation("task-001", "c-001", "money", "10", "10 JDs via Jordan Aid")
+Contract:   Emits DonationRecorded("task-001", "c-001", "money", "10", "10 JDs via Jordan Aid", timestamp)
+Result:     TX hash → saved to task_contributions.tx_hash_donation
+On-chain:   ✓ Ahmad donated 10 JDs for his contribution to task "task-001"
+
+Sara's donation is a separate TX with her own contribution ID.
 ```
 
-**Step 4: Proof Submitted**
+**Step 4: Proof Submitted (per volunteer)**
 ```
-App:        Ahmad uploads photo of delivered food baskets
+App:        Ahmad uploads photo of his 3 delivered baskets
 API route:  Photo → Supabase Storage (gets URL)
             Hashes the photo → proofHash = keccak256(photoData)
-            Calls contract → submitProof("task-001", proofHash)
-Contract:   Emits ProofSubmitted("task-001", proofHash, timestamp)
-Result:     TX hash → saved to tasks.tx_hash_proof
-On-chain:   ✓ Proof submitted for "task-001", hash matches uploaded photo
+            Calls contract → submitProof("task-001", "c-001", proofHash)
+Contract:   Emits ProofSubmitted("task-001", "c-001", proofHash, timestamp)
+Result:     TX hash → saved to task_contributions.tx_hash_proof
+On-chain:   ✓ Proof submitted for Ahmad's contribution, hash matches his photo
+
+Each volunteer submits their OWN proof, gets their OWN TX hash.
 ```
 
-**Step 5: Organization Confirms**
+**Step 5: Organization Confirms (per volunteer)**
 ```
-App:        NGO reviews photo proof, clicks "Confirm Delivery"
-API route:  Updates Supabase → status = "confirmed"
-            Calls contract → confirmCompletion("task-001")
-Contract:   Emits TaskConfirmed("task-001", timestamp)
-Result:     TX hash → saved to tasks.tx_hash_confirmed
-            Points awarded to volunteer
-On-chain:   ✓ Task "task-001" CONFIRMED complete
-            ✓ Full verifiable chain: Created → Accepted → Donated → Proof → Confirmed
+App:        NGO reviews Ahmad's photo, clicks "Confirm Delivery"
+API route:  Updates contribution → status = "confirmed"
+            Calls contract → confirmContribution("task-001", "c-001")
+Contract:   Emits ContributionConfirmed("task-001", "c-001", timestamp)
+Result:     TX hash → saved to task_contributions.tx_hash_confirmed
+            Points awarded to Ahmad
+On-chain:   ✓ Ahmad's contribution to task "task-001" CONFIRMED
+            ✓ His full chain: Accepted → Donated → Proof → Confirmed
+
+When ALL 20 volunteers are confirmed:
+            Calls contract → taskCompleted("task-001")
+            Emits TaskCompleted("task-001", timestamp)
+            ✓ Entire task is done. 50 baskets delivered by 20 volunteers.
 ```
 
 ### What the User Sees (Impact Dashboard)
@@ -413,34 +430,80 @@ Confirmed   → Organization verified completion
 
 ### Contract Functions
 ```
-createTask(taskId, orgId, donationType, description)
+createTask(taskId, orgId, donationType, description, slotsNeeded)
   → Org creates task, logged on-chain
+  → Now includes how many volunteers are needed
 
-acceptTask(taskId, volunteerId)
-  → Volunteer claims task, logged on-chain
+acceptTask(taskId, volunteerId, contributionId)
+  → A volunteer claims a slot, logged on-chain
+  → Multiple volunteers can accept the SAME task
+  → contributionId = unique ID per volunteer participation
 
-recordDonation(taskId, donationType, value, description)
-  → What was contributed: "10 JDs" / "20 food baskets"
+recordDonation(taskId, contributionId, donationType, value, description)
+  → What THIS volunteer contributed: "3 food baskets" / "10 JDs"
+  → Tied to a specific contribution, not the whole task
 
-submitProof(taskId, proofHash)
-  → Volunteer submits proof hash (photo/GPS)
+submitProof(taskId, contributionId, proofHash)
+  → THIS volunteer's proof hash (their photo/GPS)
 
-confirmCompletion(taskId)
-  → Org confirms task is done
+confirmContribution(taskId, contributionId)
+  → Org confirms THIS volunteer's delivery
+  → Each volunteer is confirmed individually
 ```
 
 ### Contract Events (Searchable, Permanent)
 ```
-TaskCreated(taskId, orgId, donationType, description, timestamp)
-TaskAccepted(taskId, volunteerId, timestamp)
-DonationRecorded(taskId, donationType, value, description, timestamp)
-ProofSubmitted(taskId, proofHash, timestamp)
-TaskConfirmed(taskId, timestamp)
+TaskCreated(taskId, orgId, donationType, description, slotsNeeded, timestamp)
+VolunteerAccepted(taskId, contributionId, volunteerId, timestamp)
+DonationRecorded(taskId, contributionId, donationType, value, description, timestamp)
+ProofSubmitted(taskId, contributionId, proofHash, timestamp)
+ContributionConfirmed(taskId, contributionId, timestamp)
+TaskCompleted(taskId, timestamp)  → emitted when ALL contributions are confirmed
+```
+
+### Multi-Volunteer Blockchain Flow Example
+```
+Task "task-001": Deliver 50 food baskets (20 drivers needed)
+  │
+  ├─ TX 0xaa1: TaskCreated("task-001", "org-001", "food", "50 baskets", 20)
+  │
+  ├─ Ahmad (contribution "c-001"):
+  │   ├─ TX 0xbb1: VolunteerAccepted("task-001", "c-001", "vol-001")
+  │   ├─ TX 0xbb2: DonationRecorded("task-001", "c-001", "food", "3", "3 baskets")
+  │   ├─ TX 0xbb3: ProofSubmitted("task-001", "c-001", 0xhash...)
+  │   └─ TX 0xbb4: ContributionConfirmed("task-001", "c-001")
+  │
+  ├─ Sara (contribution "c-002"):
+  │   ├─ TX 0xcc1: VolunteerAccepted("task-001", "c-002", "vol-002")
+  │   ├─ TX 0xcc2: DonationRecorded("task-001", "c-002", "food", "3", "3 baskets")
+  │   ├─ TX 0xcc3: ProofSubmitted("task-001", "c-002", 0xhash...)
+  │   └─ TX 0xcc4: ContributionConfirmed("task-001", "c-002")
+  │
+  ├─ ... 18 more volunteers, each with their own TX chain
+  │
+  └─ TX 0xzz1: TaskCompleted("task-001")  ← all 20 confirmed
 ```
 
 ---
 
 ## Supabase Database Schema
+
+### Multi-Volunteer Model
+
+A single task can have **multiple volunteers**. Example:
+```
+Task: "Deliver 50 food baskets to Zarqa"
+Slots: 20 drivers needed
+
+├── Ahmad:      3 baskets → proof ✓ → confirmed ✓  (+20 pts)
+├── Sara:       3 baskets → proof ✓ → confirmed ✓  (+20 pts)
+├── Omar:       2 baskets → proof ✓ → confirmed ✓  (+20 pts)
+├── Team Nexara: 10 baskets → proof ✓ → confirmed ✓ (+20 pts each)
+└── ... 16 more volunteers
+
+Each volunteer has their OWN blockchain proof chain.
+Task completes when all slots filled + confirmed.
+```
 
 ### Tables
 
@@ -466,7 +529,7 @@ CREATE TABLE volunteers (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Tasks
+-- Tasks (the main task — created by org)
 CREATE TABLE tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id UUID REFERENCES organizations(id),
@@ -474,23 +537,58 @@ CREATE TABLE tasks (
   description TEXT,
   location TEXT,
   donation_type TEXT NOT NULL,       -- 'money', 'food', 'clothes', 'service'
-  donation_value TEXT,               -- '10 JDs', '20 baskets', '50 jackets'
-  status TEXT DEFAULT 'open',        -- 'open', 'accepted', 'in_progress',
-                                     -- 'delivered', 'confirmed'
+  total_needed TEXT,                 -- '50 food baskets', '100 jackets'
+  slots INTEGER DEFAULT 1,          -- how many volunteers needed
+  slots_filled INTEGER DEFAULT 0,   -- how many have accepted so far
+  status TEXT DEFAULT 'open',        -- 'open', 'in_progress', 'completed'
+                                     -- open: accepting volunteers
+                                     -- in_progress: slots filling up
+                                     -- completed: all contributions confirmed
+  tx_hash_created TEXT,              -- blockchain TX: task created
+  created_at TIMESTAMPTZ DEFAULT now(),
+  completed_at TIMESTAMPTZ
+);
+
+-- Task Contributions (each volunteer's participation)
+-- This is the core table: one row per volunteer per task
+CREATE TABLE task_contributions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id UUID REFERENCES tasks(id),
   volunteer_id UUID REFERENCES volunteers(id),
+  contribution TEXT,                 -- '3 food baskets', '10 JDs', '2 hours tutoring'
+  donation_type TEXT,                -- 'money', 'food', 'clothes', 'service'
+  status TEXT DEFAULT 'accepted',    -- 'accepted', 'in_progress', 'delivered', 'confirmed'
   proof_url TEXT,                    -- photo proof URL (Supabase Storage)
   proof_hash TEXT,                   -- hash stored on-chain
-  tx_hash_created TEXT,              -- blockchain TX: task created
-  tx_hash_accepted TEXT,             -- blockchain TX: task accepted
+  team_name TEXT,                    -- optional: "Team Nexara" for group contributions
+  tx_hash_accepted TEXT,             -- blockchain TX: volunteer accepted
   tx_hash_donation TEXT,             -- blockchain TX: donation recorded
   tx_hash_proof TEXT,                -- blockchain TX: proof submitted
-  tx_hash_confirmed TEXT,            -- blockchain TX: completion confirmed
+  tx_hash_confirmed TEXT,            -- blockchain TX: org confirmed delivery
   points_awarded INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  accepted_at TIMESTAMPTZ,
-  completed_at TIMESTAMPTZ,
+  accepted_at TIMESTAMPTZ DEFAULT now(),
+  delivered_at TIMESTAMPTZ,
   confirmed_at TIMESTAMPTZ
 );
+```
+
+### How It Works
+
+```
+tasks (1) ──────── (many) task_contributions
+  │                         │
+  │ Task: "50 baskets"      │ Ahmad: 3 baskets, proof, TX hashes
+  │ Slots: 20               │ Sara: 3 baskets, proof, TX hashes
+  │ Status: in_progress     │ Omar: 2 baskets, proof, TX hashes
+  │                         │ Team Nexara: 10 baskets, proof, TX hashes
+  │                         │ ...
+  └─────────────────────────┘
+
+Each contribution has its OWN:
+  - Proof photo
+  - Blockchain TX hashes (accepted, donated, proof, confirmed)
+  - Points awarded
+  - Status lifecycle
 ```
 
 ---
@@ -499,28 +597,34 @@ CREATE TABLE tasks (
 
 ### Task Management
 ```
-POST   /api/tasks                → Create task (org side)
-GET    /api/tasks                → List available tasks (helper side)
-GET    /api/tasks/[id]           → Task details + blockchain TX links
-POST   /api/tasks/[id]/accept    → Volunteer accepts task
-POST   /api/tasks/[id]/donate    → Record donation (type + amount)
-POST   /api/tasks/[id]/proof     → Submit proof (photo upload + hash)
-POST   /api/tasks/[id]/confirm   → Org confirms completion
+POST   /api/tasks                       → Create task (org side, includes slots needed)
+GET    /api/tasks                        → List available tasks (helper side)
+GET    /api/tasks/[id]                   → Task details + all contributions + TX links
+```
+
+### Contributions (per-volunteer actions)
+```
+POST   /api/tasks/[id]/accept            → Volunteer accepts a slot (creates contribution)
+POST   /api/contributions/[id]/donate    → Record this volunteer's donation
+POST   /api/contributions/[id]/proof     → Submit this volunteer's proof
+POST   /api/contributions/[id]/confirm   → Org confirms this volunteer's delivery
+GET    /api/contributions/[id]           → Single contribution details + TX hashes
 ```
 
 ### Blockchain
 ```
-POST   /api/blockchain/log       → Write event to smart contract
-GET    /api/blockchain/task/[id] → Get all TX hashes for a task
+POST   /api/blockchain/log               → Write event to smart contract
+GET    /api/blockchain/task/[id]         → Get all TX hashes for a task
+GET    /api/blockchain/contribution/[id] → Get TX hashes for a contribution
 ```
 
 ### Users & Impact
 ```
-GET    /api/leaderboard          → Top volunteers by Impact Score
-GET    /api/volunteers/[id]      → Volunteer profile + impact
-GET    /api/volunteers/[id]/tasks → Volunteer's task history
-GET    /api/orgs/[id]            → Organization profile
-GET    /api/orgs/[id]/tasks      → Organization's tasks
+GET    /api/leaderboard                  → Top volunteers by Impact Score
+GET    /api/volunteers/[id]              → Volunteer profile + impact summary
+GET    /api/volunteers/[id]/contributions → All this volunteer's contributions + TX links
+GET    /api/orgs/[id]                    → Organization profile
+GET    /api/orgs/[id]/tasks              → Organization's tasks + progress
 ```
 
 ---
