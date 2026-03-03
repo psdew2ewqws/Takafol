@@ -164,7 +164,7 @@ export default function HomePage() {
       <AnimatePresence>
         {activePopup && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+            className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center pb-6 sm:pb-0 ${activeView ? "px-2 sm:px-4" : "px-4"}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -185,8 +185,9 @@ export default function HomePage() {
               initial={{ opacity: 0, scale: 0.92, y: 60 }}
               animate={{
                 opacity: 1, scale: 1, y: 0,
-                maxWidth: activeView ? 900 : 440,
-                maxHeight: activeView ? "90vh" : "85vh",
+                maxWidth: activeView ? 1100 : 440,
+                height: activeView ? "92vh" : "auto",
+                maxHeight: activeView ? "92vh" : "85vh",
               }}
               exit={{ opacity: 0, scale: 0.95, y: 40 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
@@ -200,19 +201,19 @@ export default function HomePage() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -40 }}
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="flex flex-col h-full max-h-[90vh]"
+                    className="flex flex-col h-full"
                   >
                     {/* Inline View Header */}
-                    <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0 border-b border-gray-100">
+                    <div className="flex items-center gap-3 px-5 pt-4 pb-3 shrink-0 border-b border-gray-100">
                       <motion.button
                         onClick={() => setActiveView(null)}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
                         whileTap={{ scale: 0.9 }}
                       >
-                        <BackArrow size={18} strokeWidth={2} />
+                        <BackArrow size={20} strokeWidth={2} />
                       </motion.button>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 truncate">
+                        <p className="text-base font-bold text-gray-900 truncate">
                           {activeView === "browse-offers" && t("browseOffers")}
                           {activeView === "create-request" && t("createRequest")}
                           {activeView === "personal" && t("personalContribution")}
@@ -221,14 +222,14 @@ export default function HomePage() {
                       </div>
                       <button
                         onClick={closePopup}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all cursor-pointer"
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-all cursor-pointer"
                       >
-                        <X size={16} strokeWidth={2.5} />
+                        <X size={18} strokeWidth={2.5} />
                       </button>
                     </div>
 
                     {/* Inline View Body */}
-                    <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+                    <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5">
                       {activeView === "browse-offers" && <InlineBrowseOffers />}
                       {activeView === "create-request" && <InlineCreateRequest onSuccess={() => setActiveView(null)} />}
                       {activeView === "personal" && <InlinePersonalOffer />}
