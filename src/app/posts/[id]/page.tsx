@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/components/providers/language-provider";
+import { BlockchainBadge } from "@/components/blockchain/BlockchainBadge";
 import { formatRelativeTime, getUrgencyConfig } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { PostWithRelations } from "@/types";
@@ -219,6 +220,16 @@ export default function PostDetailPage() {
           <p className="whitespace-pre-wrap text-base leading-relaxed text-gray-800">
             {post.description}
           </p>
+
+          {/* Blockchain Verification */}
+          {post.blockchainTx && (
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/50 px-4 py-3">
+              <BlockchainBadge txHash={post.blockchainTx} size="md" />
+              <span className="text-xs text-emerald-700 font-medium">
+                {lang === "ar" ? "مُوثّق على البلوكتشين" : "Verified on Blockchain"}
+              </span>
+            </div>
+          )}
 
           <Separator />
 

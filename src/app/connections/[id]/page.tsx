@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { BlockchainProof } from "@/components/blockchain/BlockchainProof";
+import { BlockchainBadge } from "@/components/blockchain/BlockchainBadge";
 import { useLanguage } from "@/components/providers/language-provider";
 import { formatRelativeTime, getUrgencyConfig, truncateText } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -151,6 +152,8 @@ export default function ConnectionDetailPage() {
   }
 
   const statusConfig = STATUS_CONFIG[connection.status] ?? STATUS_CONFIG.PENDING;
+  const postTx = (connection.post as Record<string, unknown>).blockchainTx as string | null;
+  const connTx = (connection as unknown as Record<string, unknown>).blockchainTx as string | null;
   const isGiver = session?.user?.id === connection.giverId;
   const otherParty = isGiver ? connection.requester : connection.giver;
   const isPostAuthor = session?.user?.id === connection.post.userId;
@@ -186,12 +189,15 @@ export default function ConnectionDetailPage() {
             <CardTitle className="text-lg font-bold text-emerald-900">
               {t("connectionDetail")}
             </CardTitle>
-            <Badge
-              variant="outline"
-              className={cn("text-xs", statusConfig.color, statusConfig.bg)}
-            >
-              {statusConfig.label}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <BlockchainBadge txHash={connTx} size="sm" />
+              <Badge
+                variant="outline"
+                className={cn("text-xs", statusConfig.color, statusConfig.bg)}
+              >
+                {statusConfig.label}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -289,29 +295,31 @@ export default function ConnectionDetailPage() {
         <ChatPanel connectionId={connection.id} disabled={isChatDisabled} />
       </div>
 
-      {/* Blockchain Proof */}
-      {connection.status === "COMPLETED" && (
+      {/* Blockchain Proof — show whenever any tx exists */}
+      {(postTx || connTx) && (
         <Card className="border-emerald-100">
           <CardContent className="p-4">
             <BlockchainProof
               steps={[
                 {
                   label: lang === "ar" ? "تم إنشاء المنشور" : "Post Created",
-                  txHash: (connection.post as Record<string, unknown>).blockchainTx as string | null,
+                  txHash: postTx,
                   timestamp: new Date(connection.post.createdAt).toLocaleDateString(),
                 },
                 {
                   label: lang === "ar" ? "تم إنشاء التواصل" : "Connection Made",
-                  txHash: (connection as unknown as Record<string, unknown>).blockchainTx as string | null,
+                  txHash: connTx,
                   timestamp: new Date(connection.createdAt).toLocaleDateString(),
                 },
-                {
-                  label: lang === "ar" ? "تم الإكمال" : "Completed",
-                  txHash: (connection as unknown as Record<string, unknown>).blockchainTx as string | null,
-                  timestamp: connection.completedAt
-                    ? new Date(connection.completedAt).toLocaleDateString()
-                    : undefined,
-                },
+                ...(connection.status === "COMPLETED"
+                  ? [{
+                      label: lang === "ar" ? "تم الإكمال" : "Completed",
+                      txHash: connTx,
+                      timestamp: connection.completedAt
+                        ? new Date(connection.completedAt).toLocaleDateString()
+                        : undefined,
+                    }]
+                  : []),
               ]}
             />
           </CardContent>

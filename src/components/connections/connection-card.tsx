@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatRelativeTime, truncateText } from "@/lib/format";
 import { useLanguage } from "@/components/providers/language-provider";
+import { BlockchainBadge } from "@/components/blockchain/BlockchainBadge";
 import { cn } from "@/lib/utils";
 import type { ConnectionWithRelations } from "@/types";
 
@@ -54,6 +55,13 @@ export function ConnectionCard({ connection }: ConnectionCardProps) {
             {connection.post.category.icon}{" "}
             {truncateText(connection.post.description, 80)}
           </p>
+
+          {/* Blockchain verification */}
+          {connection.blockchainTx && (
+            <div className="mb-3">
+              <BlockchainBadge txHash={connection.blockchainTx} size="sm" />
+            </div>
+          )}
 
           {/* Other party + meta */}
           <div className="flex items-center justify-between border-t border-gray-50 pt-3">

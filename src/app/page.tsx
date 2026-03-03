@@ -97,63 +97,57 @@ export default function HomePage() {
               {t("heroDescription")}
             </p>
 
-            {/* CTA Buttons — Organic, no squares */}
-            <div className="flex flex-col gap-3 max-w-sm mx-auto">
-              {/* Primary row */}
-              <div className="flex gap-3">
-                <motion.button
-                  onClick={() => setActivePopup("offer")}
-                  className="group relative flex-1 overflow-hidden rounded-[22px] bg-gradient-to-br from-white via-white to-emerald-50 py-5 shadow-xl shadow-emerald-950/20 cursor-pointer"
-                  whileHover={{ scale: 1.03, y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            {/* CTA Grid */}
+            <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+              <motion.button
+                onClick={() => setActivePopup("request")}
+                className="group relative h-32 overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 shadow-xl shadow-amber-900/30 cursor-pointer"
+                whileHover={{ scale: 1.03, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+                <div className="relative flex h-full flex-col items-center justify-center gap-2">
+                  <Megaphone className="h-9 w-9 text-white drop-shadow-md" strokeWidth={1.8} />
+                  <span className="text-sm font-bold text-white">{t("requestHelp")}</span>
+                </div>
+              </motion.button>
+
+              <motion.button
+                onClick={() => setActivePopup("offer")}
+                className="group relative h-32 overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-emerald-50 shadow-xl shadow-emerald-950/20 cursor-pointer"
+                whileHover={{ scale: 1.03, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/0 to-emerald-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative flex h-full flex-col items-center justify-center gap-2">
+                  <HeartHandshake className="h-9 w-9 text-emerald-600 drop-shadow-sm" strokeWidth={1.8} />
+                  <span className="text-sm font-bold text-emerald-900">{t("offerHelp")}</span>
+                </div>
+              </motion.button>
+
+              <Link href="/leaderboard" className="block">
+                <motion.div
+                  className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-md text-white/90 hover:bg-white/[0.12] transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/0 to-emerald-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative flex flex-col items-center gap-2">
-                    <HeartHandshake className="h-8 w-8 text-emerald-700 drop-shadow-sm" strokeWidth={1.8} />
-                    <span className="text-sm font-bold text-emerald-900">{t("offerHelp")}</span>
-                  </div>
-                </motion.button>
+                  <Crown className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
+                  <span className="text-sm font-semibold">{t("navLeaderboard")}</span>
+                </motion.div>
+              </Link>
 
-                <motion.button
-                  onClick={() => setActivePopup("request")}
-                  className="group relative flex-1 overflow-hidden rounded-[22px] bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 py-5 shadow-xl shadow-amber-900/30 cursor-pointer"
-                  whileHover={{ scale: 1.03, y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              <Link href="/tasks" className="block">
+                <motion.div
+                  className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-md text-white/90 hover:bg-white/[0.12] transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-t from-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative flex flex-col items-center gap-2">
-                    <Megaphone className="h-8 w-8 text-white drop-shadow-sm" strokeWidth={1.8} />
-                    <span className="text-sm font-bold text-white">{t("requestHelp")}</span>
-                  </div>
-                </motion.button>
-              </div>
-
-              {/* Secondary row — subtle glass links */}
-              <div className="flex gap-3">
-                <Link href="/tasks" className="flex-1">
-                  <motion.div
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] py-3.5 backdrop-blur-md text-white/90 hover:bg-white/[0.12] transition-colors"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Flame className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
-                    <span className="text-sm font-semibold">{t("navTasks")}</span>
-                  </motion.div>
-                </Link>
-
-                <Link href="/leaderboard" className="flex-1">
-                  <motion.div
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] py-3.5 backdrop-blur-md text-white/90 hover:bg-white/[0.12] transition-colors"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Crown className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
-                    <span className="text-sm font-semibold">{t("navLeaderboard")}</span>
-                  </motion.div>
-                </Link>
-              </div>
+                  <Flame className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
+                  <span className="text-sm font-semibold">{t("navTasks")}</span>
+                </motion.div>
+              </Link>
             </div>
           </div>
         </div>
@@ -190,7 +184,7 @@ export default function HomePage() {
               initial={{ opacity: 0, scale: 0.92, y: 60 }}
               animate={{
                 opacity: 1, scale: 1, y: 0,
-                maxWidth: activeView ? 720 : 400,
+                maxWidth: activeView ? 900 : 400,
                 maxHeight: activeView ? "90vh" : "85vh",
               }}
               exit={{ opacity: 0, scale: 0.95, y: 40 }}
