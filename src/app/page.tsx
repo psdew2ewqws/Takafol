@@ -5,11 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
-  HeartHandshake, Megaphone, Star, Shield, Users, Heart,
-  Flame, Crown, Telescope, Feather, Gift, Compass,
-  ChevronLeft, ChevronRight, X, Eye, BadgeCheck, HandHeart,
-  ArrowLeft, ArrowRight,
+  HandHeart, HelpCircle, Star, Shield, Users, Heart,
+  ClipboardList, Trophy, Telescope, Feather, Gift, Compass,
+  ChevronLeft, ChevronRight, X, Eye, BadgeCheck, HeartHandshake,
+  Megaphone, ArrowLeft, ArrowRight,
 } from "lucide-react";
+// NOTE: CTA grid uses original icons: HelpCircle, HandHeart, Trophy, ClipboardList — DO NOT change
 import { AnimatePresence, motion } from "motion/react";
 import { useLanguage } from "@/components/providers/language-provider";
 import { Badge } from "@/components/ui/badge";
@@ -20,10 +21,11 @@ import {
   InlineCreateRequest,
   InlinePersonalOffer,
   InlineBrowseRequests,
+  InlineCreateOffer,
 } from "@/components/home/inline-views";
 
 type PopupType = "offer" | "request" | null;
-type ActiveView = "browse-offers" | "create-request" | "personal" | "browse-requests" | null;
+type ActiveView = "browse-offers" | "create-request" | "personal" | "browse-requests" | "create-offer" | null;
 
 interface Charity {
   id: string;
@@ -109,7 +111,7 @@ export default function HomePage() {
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
                 <div className="relative flex h-full flex-col items-center justify-center gap-2">
-                  <Megaphone className="h-9 w-9 text-white drop-shadow-md" strokeWidth={1.8} />
+                  <HelpCircle className="h-9 w-9 text-white drop-shadow-md" strokeWidth={1.8} />
                   <span className="text-sm font-bold text-white">{t("requestHelp")}</span>
                 </div>
               </motion.button>
@@ -123,7 +125,7 @@ export default function HomePage() {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/0 to-emerald-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative flex h-full flex-col items-center justify-center gap-2">
-                  <HeartHandshake className="h-9 w-9 text-emerald-600 drop-shadow-sm" strokeWidth={1.8} />
+                  <HandHeart className="h-9 w-9 text-emerald-600 drop-shadow-sm" strokeWidth={1.8} />
                   <span className="text-sm font-bold text-emerald-900">{t("offerHelp")}</span>
                 </div>
               </motion.button>
@@ -134,7 +136,7 @@ export default function HomePage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Crown className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
+                  <Trophy className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
                   <span className="text-sm font-semibold">{t("navLeaderboard")}</span>
                 </motion.div>
               </Link>
@@ -145,7 +147,7 @@ export default function HomePage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Flame className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
+                  <ClipboardList className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
                   <span className="text-sm font-semibold">{t("navTasks")}</span>
                 </motion.div>
               </Link>
@@ -218,6 +220,7 @@ export default function HomePage() {
                           {activeView === "create-request" && t("createRequest")}
                           {activeView === "personal" && t("personalContribution")}
                           {activeView === "browse-requests" && t("browseRequests")}
+                          {activeView === "create-offer" && t("createOffer")}
                         </p>
                       </div>
                       <button
@@ -232,8 +235,9 @@ export default function HomePage() {
                     <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5">
                       {activeView === "browse-offers" && <InlineBrowseOffers />}
                       {activeView === "create-request" && <InlineCreateRequest onSuccess={() => setActiveView(null)} />}
-                      {activeView === "personal" && <InlinePersonalOffer />}
+                      {activeView === "personal" && <InlinePersonalOffer onCreateOffer={() => setActiveView("create-offer")} />}
                       {activeView === "browse-requests" && <InlineBrowseRequests />}
+                      {activeView === "create-offer" && <InlineCreateOffer onSuccess={() => setActiveView("personal")} />}
                     </div>
 
                     {/* Bottom accent bar */}

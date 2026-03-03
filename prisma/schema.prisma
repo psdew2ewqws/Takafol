@@ -269,6 +269,8 @@ model Charity {
   descriptionAr  String? @map("description_ar") @db.Text
   logoUrl        String? @map("logo_url")
   website        String?
+  cliqAlias      String? @map("cliq_alias")
+  iban           String?
   isVerified     Boolean @default(false) @map("is_verified")
   isActive       Boolean @default(true) @map("is_active")
 

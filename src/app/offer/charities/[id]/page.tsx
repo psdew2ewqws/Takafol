@@ -12,6 +12,10 @@ import {
   Loader2,
   DollarSign,
   Calendar,
+  Copy,
+  Check,
+  CreditCard,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface VolunteerProgram {
   id: string;
@@ -44,6 +49,8 @@ interface Charity {
   descriptionAr: string | null;
   logoUrl: string | null;
   website: string | null;
+  cliqAlias: string | null;
+  iban: string | null;
   isVerified: boolean;
   volunteerPrograms: VolunteerProgram[];
   _count: { zakatDonations: number; volunteerPrograms: number };
@@ -138,9 +145,21 @@ export default function CharityDetailPage() {
       {/* Charity Header */}
       <Card className="mb-6 border-emerald-100">
         <CardContent className="flex flex-col items-center p-6 text-center">
-          <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-50">
-            <Heart className="h-10 w-10 text-emerald-600" />
-          </div>
+          {charity.logoUrl ? (
+            <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-white border border-gray-100 overflow-hidden">
+              <Image
+                src={charity.logoUrl}
+                alt={charityName}
+                width={80}
+                height={80}
+                className="object-contain p-2"
+              />
+            </div>
+          ) : (
+            <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-50">
+              <Heart className="h-10 w-10 text-emerald-600" />
+            </div>
+          )}
           <div className="mb-1 flex items-center gap-2">
             <h1 className="text-xl font-bold text-emerald-900">{charityName}</h1>
             {charity.isVerified && <BadgeCheck className="h-5 w-5 text-emerald-600" />}
@@ -162,6 +181,34 @@ export default function CharityDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* CliQ & IBAN Payment Info */}
+      {(charity.cliqAlias || charity.iban) && (
+        <Card className="mb-6 border-emerald-100">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+              {lang === "ar" ? "طرق التبرع المباشر" : "Direct Donation Methods"}
+            </p>
+
+            {charity.cliqAlias && (
+              <CopyableField
+                icon={<CreditCard className="h-4 w-4 text-emerald-600" />}
+                label={lang === "ar" ? "كليك (CliQ)" : "CliQ Alias"}
+                value={charity.cliqAlias}
+              />
+            )}
+
+            {charity.iban && (
+              <CopyableField
+                icon={<Building2 className="h-4 w-4 text-blue-600" />}
+                label={lang === "ar" ? "رقم الحساب (IBAN)" : "IBAN"}
+                value={charity.iban.replace(/(.{4})/g, "$1 ").trim()}
+                copyValue={charity.iban}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs: Zakat + Volunteering */}
       <Tabs defaultValue="zakat">
@@ -318,6 +365,44 @@ export default function CharityDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function CopyableField({
+  icon,
+  label,
+  value,
+  copyValue,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  copyValue?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(copyValue || value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard may not be available */ }
+  };
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+      <div className="shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{label}</p>
+        <p className="text-sm font-mono font-bold text-gray-900 truncate">{value}</p>
+      </div>
+      <button
+        onClick={handleCopy}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-all cursor-pointer"
+      >
+        {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+      </button>
     </div>
   );
 }
