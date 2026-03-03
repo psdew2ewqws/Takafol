@@ -76,6 +76,7 @@ export const translations = {
     en: "See help requests from people who need your support in your community",
   },
   viewAllRequests: { ar: "عرض جميع الطلبات", en: "View all requests" },
+  noCharitiesYet: { ar: "لا توجد جمعيات بعد", en: "No charities yet" },
   programs: { ar: "برامج", en: "programs" },
   zakatDonate: { ar: "تبرع زكاة", en: "Zakat Donation" },
 

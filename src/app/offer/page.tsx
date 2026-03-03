@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { HandHeart, User, FileText, Loader2, ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  HandHeart, User, FileText, Loader2, ChevronLeft, ChevronRight,
+  BadgeCheck, Users,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { CharityCard } from "@/components/charity/charity-card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/components/providers/language-provider";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface Charity {
   id: string;
@@ -28,7 +31,7 @@ export default function OfferHelpPage() {
   const { lang, t } = useLanguage();
   const [charities, setCharities] = useState<Charity[]>([]);
   const [loading, setLoading] = useState(true);
-  const BackArrow = lang === "ar" ? ArrowLeft : ArrowRight;
+  const Arrow = lang === "ar" ? ChevronLeft : ChevronRight;
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -60,71 +63,100 @@ export default function OfferHelpPage() {
   if (!session) return null;
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-6">
+    <div className="container mx-auto max-w-2xl px-4 py-6">
       {/* Header */}
-      <div className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
-          <HandHeart className="h-7 w-7 text-emerald-700" />
-        </div>
+      <div className="mb-5">
         <h1 className="text-2xl font-bold text-emerald-900">{t("offerHubTitle")}</h1>
         <p className="text-sm text-muted-foreground">{t("offerHubSubtitle")}</p>
       </div>
 
-      {/* Charity Platforms */}
-      <div className="mb-6">
-        <h2 className="mb-3 text-lg font-bold text-emerald-900">{t("charityPlatforms")}</h2>
-        <p className="mb-4 text-sm text-muted-foreground">{t("charityPlatformsDesc")}</p>
-
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-48 rounded-xl" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {charities.map((charity) => (
-              <CharityCard key={charity.id} charity={charity} lang={lang} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Separator className="my-6" />
-
-      {/* من عندي + Requests Feed */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Quick Actions — From Me + Browse Requests */}
+      <div className="mb-6 space-y-2">
         <Link href="/offer/personal">
-          <Card className="group h-full cursor-pointer border-amber-200 bg-amber-50/50 transition-all hover:border-amber-300 hover:shadow-lg">
-            <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 transition-transform group-hover:scale-105">
-                <User className="h-7 w-7 text-amber-700" />
-              </div>
-              <h3 className="mb-1 text-lg font-bold text-amber-900">{t("personalContribution")}</h3>
-              <p className="text-sm text-amber-700/80">{t("personalContributionDesc")}</p>
-              <span className="mt-3 flex items-center gap-1 text-xs font-medium text-amber-600">
-                {t("browseOrCreateOffer")}
-                <BackArrow className="h-3 w-3" />
-              </span>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3.5 transition-colors hover:bg-gray-50">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50">
+              <User size={20} className="text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900">{t("personalContribution")}</p>
+              <p className="text-xs text-gray-500">{t("personalContributionDesc")}</p>
+            </div>
+            <Arrow size={16} className="shrink-0 text-gray-400" />
+          </div>
         </Link>
 
         <Link href="/offer/requests">
-          <Card className="group h-full cursor-pointer border-emerald-200 bg-emerald-50/50 transition-all hover:border-emerald-300 hover:shadow-lg">
-            <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 transition-transform group-hover:scale-105">
-                <FileText className="h-7 w-7 text-emerald-700" />
-              </div>
-              <h3 className="mb-1 text-lg font-bold text-emerald-900">{t("browseRequests")}</h3>
-              <p className="text-sm text-emerald-700/80">{t("browseRequestsDesc")}</p>
-              <span className="mt-3 flex items-center gap-1 text-xs font-medium text-emerald-600">
-                {t("viewAllRequests")}
-                <BackArrow className="h-3 w-3" />
-              </span>
+          <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3.5 transition-colors hover:bg-gray-50">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+              <FileText size={20} className="text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900">{t("browseRequests")}</p>
+              <p className="text-xs text-gray-500">{t("browseRequestsDesc")}</p>
+            </div>
+            <Arrow size={16} className="shrink-0 text-gray-400" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Charities List */}
+      <div>
+        <h2 className="mb-3 text-sm font-bold text-gray-500 uppercase tracking-wider">{t("charityPlatforms")}</h2>
+
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-xl" />
+            ))}
+          </div>
+        ) : charities.length === 0 ? (
+          <Card className="border-gray-200">
+            <CardContent className="p-8 text-center">
+              <p className="text-sm text-muted-foreground">{t("noCharitiesYet")}</p>
             </CardContent>
           </Card>
-        </Link>
+        ) : (
+          <Card className="border-gray-200">
+            <CardContent className="p-0">
+              {charities.map((charity, i) => {
+                const name = lang === "ar" ? charity.nameAr : charity.name;
+                const desc = lang === "ar"
+                  ? (charity.descriptionAr || charity.description)
+                  : (charity.description || charity.descriptionAr);
+                return (
+                  <Link key={charity.id} href={`/offer/charities/${charity.id}`}>
+                    <div className={cn(
+                      "flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50",
+                      i < charities.length - 1 && "border-b border-gray-100"
+                    )}>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+                        <HandHeart size={18} className="text-emerald-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-bold text-gray-900 truncate">{name}</p>
+                          {charity.isVerified && <BadgeCheck size={14} className="shrink-0 text-emerald-600" />}
+                        </div>
+                        {desc && (
+                          <p className="text-xs text-gray-500 truncate">{desc}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {charity._count && charity._count.volunteerPrograms > 0 && (
+                          <Badge variant="outline" className="text-[10px] border-emerald-200 text-emerald-700">
+                            <Users size={10} className="me-0.5" />
+                            {charity._count.volunteerPrograms}
+                          </Badge>
+                        )}
+                        <Arrow size={16} className="text-gray-300" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
