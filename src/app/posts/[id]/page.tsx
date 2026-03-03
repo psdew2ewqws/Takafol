@@ -143,7 +143,9 @@ export default function PostDetailPage() {
   }
 
   const isOffer = post.type === "OFFER";
+  const isAdmin = session?.user?.role === "ADMIN";
   const isAuthor = session?.user?.id === post.userId;
+  const canDelete = isAuthor || isAdmin;
   const urgencyConfig = getUrgencyConfig(post.urgency);
 
   return (
@@ -193,6 +195,17 @@ export default function PostDetailPage() {
         </CardHeader>
 
         <CardContent className="space-y-5">
+          {/* Post image */}
+          {(post as PostWithRelations & { imageUrl?: string | null }).imageUrl && (
+            <div className="overflow-hidden rounded-xl">
+              <img
+                src={(post as PostWithRelations & { imageUrl?: string | null }).imageUrl!}
+                alt=""
+                className="h-64 w-full rounded-xl object-cover"
+              />
+            </div>
+          )}
+
           {/* Meta info */}
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -259,18 +272,17 @@ export default function PostDetailPage() {
 
           {/* Actions */}
           <div className="flex gap-3">
-            {isAuthor ? (
-              <>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="mx-1 h-4 w-4" />
-                  {t("delete")}
-                </Button>
-              </>
-            ) : session ? (
+            {canDelete && (
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(true)}
+                className={isAuthor ? "flex-1" : ""}
+              >
+                <Trash2 className="mx-1 h-4 w-4" />
+                {t("delete")}
+              </Button>
+            )}
+            {!isAuthor && session ? (
               <Button
                 onClick={handleConnect}
                 disabled={connecting || post.status !== "ACTIVE"}

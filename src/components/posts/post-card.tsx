@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Clock, Users } from "lucide-react";
+import { MapPin, Clock, Users, Navigation } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { formatRelativeTime, getUrgencyConfig, truncateText } from "@/lib/format";
+import { formatRelativeTime, getUrgencyConfig, truncateText, getDistanceKm, formatDistance } from "@/lib/format";
 import { useLanguage } from "@/components/providers/language-provider";
 import { BlockchainBadge } from "@/components/blockchain/BlockchainBadge";
 import { cn } from "@/lib/utils";
@@ -13,12 +13,19 @@ import type { PostWithRelations } from "@/types";
 
 interface PostCardProps {
   post: PostWithRelations;
+  userCoords?: { lat: number; lng: number } | null;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, userCoords }: PostCardProps) {
   const { lang, t } = useLanguage();
   const urgency = getUrgencyConfig(post.urgency);
   const isOffer = post.type === "OFFER";
+
+  const postWithLocation = post as PostWithRelations & { latitude?: number | null; longitude?: number | null };
+  const distance =
+    userCoords && postWithLocation.latitude && postWithLocation.longitude
+      ? getDistanceKm(userCoords.lat, userCoords.lng, postWithLocation.latitude, postWithLocation.longitude)
+      : null;
 
   const urgencyLabel: Record<string, string> = {
     LOW: t("urgencyLow"),
@@ -29,7 +36,17 @@ export function PostCard({ post }: PostCardProps) {
 
   return (
     <Link href={`/posts/${post.id}`}>
-      <Card className="group border-emerald-100 transition-all hover:border-emerald-200 hover:shadow-md">
+      <Card className="group overflow-hidden border-emerald-100 transition-all hover:border-emerald-200 hover:shadow-md">
+        {/* Image thumbnail */}
+        {(post as PostWithRelations & { imageUrl?: string | null }).imageUrl && (
+          <div className="h-40 w-full overflow-hidden">
+            <img
+              src={(post as PostWithRelations & { imageUrl?: string | null }).imageUrl!}
+              alt=""
+              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            />
+          </div>
+        )}
         <CardContent className="p-4">
           {/* Header: type badge + urgency */}
           <div className="mb-3 flex items-start justify-between gap-2">
@@ -61,6 +78,12 @@ export function PostCard({ post }: PostCardProps) {
               <MapPin className="h-3 w-3" />
               {lang === "ar" ? post.district.nameAr : post.district.nameEn}
             </span>
+            {distance !== null && (
+              <span className="flex items-center gap-1 font-medium text-emerald-600">
+                <Navigation className="h-3 w-3" />
+                {formatDistance(distance)}
+              </span>
+            )}
           </div>
 
           {/* Description */}

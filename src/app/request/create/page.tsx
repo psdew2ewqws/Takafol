@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { HelpCircle, Loader2, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
+import { HelpCircle, Loader2, ArrowRight, ArrowLeft, Sparkles, MapPin, X, Camera, Upload, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -83,9 +83,90 @@ export default function CreateRequestPage() {
   const [categoryId, setCategoryId] = useState("");
   const [districtId, setDistrictId] = useState("");
   const [urgency, setUrgency] = useState<UrgencyLevel>("MEDIUM");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const userOverrode = useRef(false);
   const { aiSuggestion, classifying, classify } = useAiClassify(description, categories, setCategoryId, userOverrode);
+
+  function requestLocation() {
+    if (!navigator.geolocation) {
+      toast.error(t("locationUnavailable"));
+      return;
+    }
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setLocationLoading(false);
+        toast.success(t("locationDetected"));
+      },
+      (error) => {
+        setLocationLoading(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error(t("locationDenied"));
+        } else {
+          toast.error(t("locationFailed"));
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  function clearLocation() {
+    setLatitude(null);
+    setLongitude(null);
+  }
+
+  async function handleImageUpload(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Max 10MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "takafol_unsigned");
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: "POST", body: formData },
+      );
+      const data = await res.json();
+
+      if (data.secure_url) {
+        setImageUrl(data.secure_url);
+        toast.success(t("imageUploaded"));
+      } else {
+        throw new Error("No URL returned");
+      }
+    } catch {
+      toast.error(t("imageUploadFailed"));
+      setImagePreview(null);
+      setImageUrl(null);
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
+  function clearImage() {
+    setImageUrl(null);
+    setImagePreview(null);
+  }
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -109,8 +190,12 @@ export default function CreateRequestPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!description.trim() || !districtId) {
+    if (!description.trim() || !districtId || !categoryId) {
       toast.error(t("unexpectedError"));
+      return;
+    }
+    if (latitude === null || longitude === null) {
+      toast.error(t("locationRequired"));
       return;
     }
     if (description.length < 10) {
@@ -126,9 +211,11 @@ export default function CreateRequestPage() {
         body: JSON.stringify({
           type: "REQUEST",
           description: description.trim(),
-          categoryId: categoryId || categories[0]?.id,
+          categoryId,
           districtId,
           urgency,
+          ...(latitude !== null && longitude !== null ? { latitude, longitude } : {}),
+          ...(imageUrl ? { imageUrl } : {}),
         }),
       });
 
@@ -194,6 +281,65 @@ export default function CreateRequestPage() {
               <p className="text-xs text-muted-foreground">{description.length}/2000</p>
             </div>
 
+            {/* Image Upload (optional) */}
+            <div className="space-y-2">
+              <Label>{t("addPhotoOptional")}</Label>
+              {imagePreview ? (
+                <div className="relative overflow-hidden rounded-xl">
+                  <img src={imagePreview} alt="" className="h-48 w-full rounded-xl object-cover" />
+                  {imageUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
+                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+                    </div>
+                  )}
+                  {!imageUploading && (
+                    <button
+                      type="button"
+                      onClick={clearImage}
+                      className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-sm font-bold text-white hover:bg-black/70"
+                      aria-label={t("removeImage")}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50 px-4 py-5 transition-colors hover:bg-amber-100"
+                  >
+                    <Camera className="h-5 w-5 text-amber-600" />
+                    <span className="text-xs font-medium text-amber-700">{t("takePhoto")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-5 transition-colors hover:bg-gray-100"
+                  >
+                    <ImageIcon className="h-5 w-5 text-gray-500" />
+                    <span className="text-xs font-medium text-gray-600">{t("chooseFile")}</span>
+                  </button>
+                </div>
+              )}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+              />
+            </div>
+
             {/* Urgency */}
             <div className="space-y-2">
               <Label htmlFor="urgency">{t("urgencyLevel")} *</Label>
@@ -227,9 +373,50 @@ export default function CreateRequestPage() {
               </Select>
             </div>
 
+            {/* Location (optional) */}
+            <div className="space-y-2">
+              <Label>{t("myLocation")} *</Label>
+              {latitude !== null && longitude !== null ? (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                  <MapPin className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <span className="flex-1 text-sm text-emerald-800">
+                    {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearLocation}
+                    className="rounded-full p-0.5 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700"
+                    aria-label={t("removeLocation")}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={requestLocation}
+                  disabled={locationLoading}
+                  className="w-full justify-center gap-2 border-dashed"
+                >
+                  {locationLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("locationLoading")}
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="h-4 w-4" />
+                      {t("detectLocation")}
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+
             {/* Category (optional) */}
             <div className="space-y-2">
-              <Label htmlFor="category">{t("categoryOptional")}</Label>
+              <Label htmlFor="category">{t("category")} *</Label>
               {(classifying || aiSuggestion) && (
                 <div className="flex items-center gap-2 text-xs">
                   {classifying ? (

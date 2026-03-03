@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Plus, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { Plus, ArrowRight, ArrowLeft, Loader2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PostCard } from "@/components/posts/post-card";
@@ -21,12 +21,47 @@ export default function PersonalOfferPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [requests, setRequests] = useState<PostWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<"loading" | "granted" | "denied" | "prompting">("loading");
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
       router.push("/login");
     }
   }, [sessionStatus, router]);
+
+  function fetchLocation() {
+    if (!navigator.geolocation) {
+      setLocationStatus("denied");
+      return;
+    }
+    setLocationStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setLocationStatus("granted");
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationStatus("denied");
+        } else {
+          setLocationStatus("denied");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus("denied");
+      return;
+    }
+    // Directly request location — this forces the browser's native
+    // permission prompt on all browsers including Firefox on localhost.
+    fetchLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -95,6 +130,38 @@ export default function PersonalOfferPage() {
         </Button>
       </div>
 
+      {/* Location permission / status banner */}
+      {(locationStatus === "prompting" || locationStatus === "denied") && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <MapPin className="h-5 w-5 shrink-0 text-amber-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">{t("locationPermissionTitle")}</p>
+            <p className="text-xs text-amber-700">
+              {locationStatus === "denied" ? t("locationDeniedRetry") : t("locationPermissionDesc")}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={fetchLocation}
+            className="shrink-0 bg-amber-600 text-white hover:bg-amber-700"
+          >
+            {t("allowLocation")}
+          </Button>
+        </div>
+      )}
+      {locationStatus === "loading" && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-emerald-600" />
+          <p className="text-sm font-medium text-emerald-800">{t("locationLoading")}</p>
+        </div>
+      )}
+      {locationStatus === "granted" && userCoords && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <MapPin className="h-5 w-5 shrink-0 text-emerald-600" />
+          <p className="text-sm font-medium text-emerald-800">{t("locationDetected")}</p>
+        </div>
+      )}
+
       {/* Category tabs */}
       <div className="mb-4 flex gap-2 overflow-x-auto pb-2">
         <button
@@ -147,7 +214,7 @@ export default function PersonalOfferPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {requests.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} userCoords={userCoords} />
           ))}
         </div>
       )}

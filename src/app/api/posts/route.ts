@@ -17,6 +17,9 @@ const POST_SELECT = {
   urgency: true,
   status: true,
   userId: true,
+  imageUrl: true,
+  latitude: true,
+  longitude: true,
   aiModerated: true,
   aiScore: true,
   aiSummary: true,
@@ -147,6 +150,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const latitude = typeof body.latitude === "number" && isFinite(body.latitude) ? body.latitude : undefined;
+    const longitude = typeof body.longitude === "number" && isFinite(body.longitude) ? body.longitude : undefined;
+    const imageUrl = typeof body.imageUrl === "string" && body.imageUrl.startsWith("https://") ? body.imageUrl : undefined;
+
     const post = await prisma.post.create({
       data: {
         type: body.type,
@@ -155,6 +162,9 @@ export async function POST(request: NextRequest) {
         districtId: body.districtId,
         urgency: body.urgency ?? "MEDIUM",
         userId: session.user.id,
+        imageUrl,
+        latitude,
+        longitude,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
       select: POST_SELECT,

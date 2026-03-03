@@ -27,6 +27,9 @@ export interface CreatePostInput {
   categoryId: string;
   districtId: string;
   urgency?: UrgencyLevel;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
 }
 
 export interface UpdatePostInput {

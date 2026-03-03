@@ -416,6 +416,32 @@ export const translations = {
   requestHelpFormTitle: { ar: "طلب مساعدة", en: "Request Help" },
   requestHelpFormSubtitle: { ar: "اشرح ما تحتاج — سيظهر طلبك لمن يريد المساعدة", en: "Describe what you need — your request will be visible to helpers" },
 
+  // ─── Image Upload ────────────────────────────────────────
+  addPhoto: { ar: "أضف صورة", en: "Add Photo" },
+  addPhotoOptional: { ar: "أضف صورة (اختياري)", en: "Add Photo (optional)" },
+  uploadingImage: { ar: "جاري رفع الصورة...", en: "Uploading image..." },
+  imageUploaded: { ar: "تم رفع الصورة", en: "Image uploaded" },
+  imageUploadFailed: { ar: "فشل رفع الصورة", en: "Image upload failed" },
+  removeImage: { ar: "إزالة الصورة", en: "Remove image" },
+  takePhoto: { ar: "التقط صورة", en: "Take Photo" },
+  chooseFile: { ar: "اختر ملف", en: "Choose File" },
+
+  // ─── Location ────────────────────────────────────────────
+  myLocation: { ar: "موقعي", en: "My Location" },
+  detectLocation: { ar: "تحديد موقعي", en: "Detect My Location" },
+  locationDetected: { ar: "تم تحديد الموقع", en: "Location detected" },
+  locationFailed: { ar: "فشل تحديد الموقع", en: "Failed to detect location" },
+  locationDenied: { ar: "تم رفض إذن الموقع", en: "Location permission denied" },
+  locationDeniedRetry: { ar: "لم يتم السماح بالموقع — اضغط للمحاولة مرة أخرى أو فعّل الموقع من إعدادات المتصفح", en: "Location not allowed — click to retry or enable location in browser settings" },
+  locationUnavailable: { ar: "الموقع غير متاح", en: "Location unavailable" },
+  locationLoading: { ar: "جاري تحديد الموقع...", en: "Detecting location..." },
+  removeLocation: { ar: "إزالة الموقع", en: "Remove location" },
+  locationOptional: { ar: "الموقع (اختياري)", en: "Location (optional)" },
+  locationRequired: { ar: "يجب تحديد موقعك أولاً", en: "You must share your location" },
+  locationPermissionTitle: { ar: "شارك موقعك لنعرض لك الطلبات القريبة", en: "Share your location to see nearby requests" },
+  locationPermissionDesc: { ar: "سنستخدم موقعك لعرض طلبات المساعدة القريبة منك", en: "We'll use your location to show help requests near you" },
+  allowLocation: { ar: "السماح", en: "Allow" },
+
   // ─── AI Tagging ────────────────────────────────────────
   aiSuggests: { ar: "اقتراح الذكاء الاصطناعي", en: "AI suggests" },
   classifying: { ar: "جاري التصنيف...", en: "Classifying..." },

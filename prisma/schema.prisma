@@ -183,6 +183,13 @@ model Post {
   aiScore       Float?   @map("ai_score")
   aiSummary     String?  @map("ai_summary") @db.Text
 
+  // Image (Cloudinary URL)
+  imageUrl  String?  @map("image_url")
+
+  // Location coordinates (from browser geolocation)
+  latitude  Float?
+  longitude Float?
+
   // Blockchain verification
   blockchainTx  String?  @map("blockchain_tx")
   blockchainVerified Boolean @default(false) @map("blockchain_verified")

@@ -109,7 +109,7 @@ export default function CreatePersonalOfferPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!description.trim() || !districtId) {
+    if (!description.trim() || !districtId || !categoryId) {
       toast.error(t("unexpectedError"));
       return;
     }
@@ -126,7 +126,7 @@ export default function CreatePersonalOfferPage() {
         body: JSON.stringify({
           type: "OFFER",
           description: description.trim(),
-          categoryId: categoryId || categories[0]?.id,
+          categoryId,
           districtId,
           urgency,
         }),
@@ -199,7 +199,7 @@ export default function CreatePersonalOfferPage() {
 
             {/* Category (optional) */}
             <div className="space-y-2">
-              <Label htmlFor="category">{t("categoryOptional")}</Label>
+              <Label htmlFor="category">{t("category")} *</Label>
               {(classifying || aiSuggestion) && (
                 <div className="flex items-center gap-2 text-xs">
                   {classifying ? (
