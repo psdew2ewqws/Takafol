@@ -94,6 +94,8 @@ export const translations = {
   nahnoNoOpportunities: { ar: "لا توجد فرص تطوع حالياً", en: "No volunteer opportunities at the moment" },
   nahnoLive: { ar: "مباشر", en: "LIVE" },
   nahnoOnline: { ar: "عن بُعد", en: "Online" },
+  nahnoQuickApply: { ar: "تطوع الآن", en: "Volunteer" },
+  nahnoApplied: { ar: "تم التسجيل!", en: "Applied!" },
 
   // ─── Request Hub ─────────────────────────────────────
   requestHubTitle: { ar: "أحتاج مساعدة", en: "I Need Help" },

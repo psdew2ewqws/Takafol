@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   HandHeart, User, FileText, Loader2, ChevronLeft, ChevronRight,
-  BadgeCheck, Users, MapPin, ExternalLink, Radio,
+  BadgeCheck, Users, MapPin, ExternalLink, Radio, Zap,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,7 +58,34 @@ export default function OfferHelpPage() {
   const [loading, setLoading] = useState(true);
   const [nahnoOpportunities, setNahnoOpportunities] = useState<NahnoOpportunity[]>([]);
   const [nahnoLoading, setNahnoLoading] = useState(true);
+  const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [applyResult, setApplyResult] = useState<Record<string, { success: boolean; message: string }>>({});
   const Arrow = lang === "ar" ? ChevronLeft : ChevronRight;
+
+  async function handleQuickApply(e: React.MouseEvent, opp: NahnoOpportunity) {
+    e.preventDefault();
+    e.stopPropagation();
+    const key = `${opp.source}-${opp.id}`;
+    setApplyingId(key);
+    try {
+      const res = await fetch("/api/nahno/volunteer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "apply",
+          nahnoEmail: "takafol.test@gmail.com",
+          nahnoPassword: "Takafol@2026!",
+          opportunityUrl: opp.url,
+        }),
+      });
+      const data = await res.json();
+      setApplyResult((prev) => ({ ...prev, [key]: { success: data.success, message: data.message } }));
+    } catch {
+      setApplyResult((prev) => ({ ...prev, [key]: { success: false, message: "Connection error" } }));
+    } finally {
+      setApplyingId(null);
+    }
+  }
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -228,7 +256,7 @@ export default function OfferHelpPage() {
                             <span className="text-[11px] text-gray-500 truncate">{opp.orgName}</span>
                           </div>
 
-                          <div className="mt-1.5 flex items-center gap-3">
+                          <div className="mt-1.5 flex items-center gap-2">
                             <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-400">
                               <MapPin size={9} />
                               {opp.location || t("nahnoOnline")}
@@ -244,6 +272,38 @@ export default function OfferHelpPage() {
                                   {opp.applicantsCurrent}/{opp.applicantsMax}
                                 </span>
                               </div>
+                            )}
+
+                            {!isFull && opp.source === "nahno" && (
+                              (() => {
+                                const key = `${opp.source}-${opp.id}`;
+                                const result = applyResult[key];
+                                if (result?.success) {
+                                  return (
+                                    <span className="text-[10px] font-bold text-emerald-600">
+                                      {t("nahnoApplied") || "Applied!"}
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-5 px-1.5 text-[10px] font-bold border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                    disabled={applyingId === key}
+                                    onClick={(e) => handleQuickApply(e, opp)}
+                                  >
+                                    {applyingId === key ? (
+                                      <Loader2 size={10} className="animate-spin" />
+                                    ) : (
+                                      <>
+                                        <Zap size={8} className="me-0.5" />
+                                        {t("nahnoQuickApply") || "تطوع"}
+                                      </>
+                                    )}
+                                  </Button>
+                                );
+                              })()
                             )}
                           </div>
                         </div>
