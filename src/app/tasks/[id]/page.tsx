@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowRight, MapPin, Users, Clock, CheckCircle2, Loader2, Shield } from "lucide-react";
+import { ArrowRight, MapPin, Users, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,22 +35,26 @@ type TaskDetail = {
 export default function TaskDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { data: session } = useSession();
-  const { lang } = useLanguage();
+  const { data: session, status: sessionStatus } = useSession();
+  const { lang, t } = useLanguage();
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [proofSubmitted, setProofSubmitted] = useState(false);
   const [approving, setApproving] = useState(false);
 
-  const userId = session?.user?.id || "demo-user-001";
-  const userName = session?.user?.name || "Demo User";
+  const userId = session?.user?.id;
+  const userName = session?.user?.name || "";
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/tasks/${id}`);
-      if (res.ok) setTask(await res.json());
-      setLoading(false);
+      try {
+        const res = await fetch(`/api/tasks/${id}`);
+        if (res.ok) setTask(await res.json());
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [id]);
@@ -65,25 +69,22 @@ export default function TaskDetailPage() {
 
   if (!task) return (
     <div className="flex min-h-[50vh] items-center justify-center">
-      <p className="text-muted-foreground">{lang === "ar" ? "المهمة غير موجودة" : "Task not found"}</p>
+      <p className="text-muted-foreground">{t("taskNotFound")}</p>
     </div>
   );
 
-  const myApplication = task.applications?.find((a) => a.volunteerId === userId);
+  const myApplication = userId ? task.applications?.find((a) => a.volunteerId === userId) : null;
   const hasJoined = !!myApplication;
   const hasCompleted = myApplication?.status === "completed";
   const spotsLeft = task.maxVolunteers - task.currentVolunteers;
   const progress = task.maxVolunteers > 0 ? (task.currentVolunteers / task.maxVolunteers) * 100 : 0;
-  const isCreator = task.creatorId === userId;
+  const isCreator = userId && task.creatorId === userId;
 
   async function handleJoin() {
+    if (!userId) { router.push("/login"); return; }
     setJoining(true);
     try {
-      const res = await fetch(`/api/tasks/${id}/apply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ volunteerId: userId, volunteerName: userName }),
-      });
+      const res = await fetch(`/api/tasks/${id}/apply`, { method: "POST" });
       if (res.ok) {
         const application = await res.json();
         setTask((prev) => prev ? {
@@ -109,10 +110,9 @@ export default function TaskDetailPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-6 space-y-4">
-      {/* Back button */}
       <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-emerald-700 hover:text-emerald-800 font-medium">
         <ArrowRight size={16} className="rtl:rotate-180" />
-        {lang === "ar" ? "العودة" : "Back"}
+        {t("back")}
       </button>
 
       {/* Header */}
@@ -143,19 +143,13 @@ export default function TaskDetailPage() {
 
       {/* Connection banner */}
       <div className="bg-gradient-to-r from-emerald-50 to-amber-50 rounded-xl p-3 border border-emerald-100 text-center">
-        <p className="text-xs text-emerald-800 font-medium">
-          {lang === "ar"
-            ? "كل مهمة فرصة لتكوين صداقة وخلق ذكرى دائمة ✨"
-            : "Every task is a chance to make a friend and create a lasting memory ✨"}
-        </p>
+        <p className="text-xs text-emerald-800 font-medium">{t("taskConnectionBanner")}</p>
       </div>
 
       {/* Description */}
       <Card className="border-emerald-100">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-bold text-emerald-900">
-            {lang === "ar" ? "عن هذه المهمة" : "About this task"}
-          </CardTitle>
+          <CardTitle className="text-sm font-bold text-emerald-900">{t("aboutThisTask")}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-600 leading-relaxed">{task.description}</p>
@@ -166,9 +160,7 @@ export default function TaskDetailPage() {
       {task.impactLetter && (
         <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50 to-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold text-emerald-800">
-              {lang === "ar" ? "لماذا هذا مهم" : "Why This Matters"}
-            </CardTitle>
+            <CardTitle className="text-sm font-bold text-emerald-800">{t("whyThisMatters")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 italic">&ldquo;{task.impactLetter}&rdquo;</p>
@@ -183,7 +175,7 @@ export default function TaskDetailPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Users size={14} className="text-emerald-600" />
-              <h3 className="text-sm font-bold text-gray-900">{lang === "ar" ? "المتطوعون" : "Volunteers"}</h3>
+              <h3 className="text-sm font-bold text-gray-900">{t("volunteers")}</h3>
             </div>
             <span className="text-xs font-bold text-gray-500">{task.currentVolunteers}/{task.maxVolunteers}</span>
           </div>
@@ -208,38 +200,39 @@ export default function TaskDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Approve button (for pending tasks) */}
-      {task.status === "pending" && (
+      {/* Approve button (admin only, pending tasks) */}
+      {task.status === "pending" && isAdmin && (
         <Button onClick={handleApprove} disabled={approving} className="w-full bg-amber-500 hover:bg-amber-600 text-white">
           {approving ? <Loader2 size={16} className="animate-spin me-2" /> : <CheckCircle2 size={16} className="me-2" />}
-          {lang === "ar" ? "الموافقة على المهمة" : "Approve Task"}
+          {t("approveTask")}
         </Button>
       )}
 
       {/* Join button */}
       {!hasJoined && !isCreator && spotsLeft > 0 && (task.status === "approved" || task.status === "in_progress") && (
         <Button onClick={handleJoin} disabled={joining} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white">
-          {joining ? <><Loader2 size={16} className="animate-spin me-2" /> {lang === "ar" ? "جاري الانضمام..." : "Joining..."}</> : (
-            <><Users size={16} className="me-2" /> {lang === "ar" ? "انضم للمهمة" : "Join Task"} ({spotsLeft} {lang === "ar" ? "متبقي" : "left"})</>
+          {joining ? <><Loader2 size={16} className="animate-spin me-2" /> {t("joining")}</> : (
+            <><Users size={16} className="me-2" /> {t("joinTask")} ({spotsLeft} {t("left")})</>
           )}
         </Button>
       )}
 
+      {/* Not logged in prompt */}
+      {!userId && sessionStatus !== "loading" && (task.status === "approved" || task.status === "in_progress") && (
+        <Button onClick={() => router.push("/login")} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white">
+          {t("loginRequired")}
+        </Button>
+      )}
+
       {/* Joined badge + proof upload */}
-      {hasJoined && !hasCompleted && !proofSubmitted && (
+      {hasJoined && !hasCompleted && !proofSubmitted && userId && (
         <Card className="border-emerald-200 bg-emerald-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <CheckCircle2 size={16} className="text-emerald-600" />
-              <span className="text-sm font-bold text-emerald-700">
-                {lang === "ar" ? "انضممت لهذه المهمة! +5 نقاط أثر" : "You joined this task! +5 impact points"}
-              </span>
+              <span className="text-sm font-bold text-emerald-700">{t("joinedTask")}</span>
             </div>
-            <p className="text-xs text-gray-600 mb-4">
-              {lang === "ar"
-                ? "ارفع صورة إثبات عند إكمال المهمة لتكسب +15 نقطة وشهادة بلوكتشين"
-                : "Upload proof when done to earn +15 more points and a blockchain certificate."}
-            </p>
+            <p className="text-xs text-gray-600 mb-4">{t("uploadProofHint")}</p>
             <ProofUpload taskId={task.id} volunteerId={userId} onProofSubmitted={() => setProofSubmitted(true)} />
           </CardContent>
         </Card>
@@ -275,7 +268,7 @@ export default function TaskDetailPage() {
       {task.status === "completed" && task.txHash && (
         <Card className="border-emerald-100">
           <CardContent className="p-4">
-            <BlockchainProof steps={[{ label: lang === "ar" ? "المهمة مكتملة" : "Task Completed", txHash: task.txHash, timestamp: formatDateShort(task.createdAt) }]} />
+            <BlockchainProof steps={[{ label: t("taskCompleted"), txHash: task.txHash, timestamp: formatDateShort(task.createdAt) }]} />
           </CardContent>
         </Card>
       )}

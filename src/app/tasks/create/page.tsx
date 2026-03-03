@@ -17,31 +17,32 @@ import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES = [
-  { key: "food", labelEn: "Food", labelAr: "طعام", icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50" },
-  { key: "clothes", labelEn: "Clothes", labelAr: "ملابس", icon: Shirt, color: "text-purple-600", bg: "bg-purple-50" },
-  { key: "education", labelEn: "Education", labelAr: "تعليم", icon: GraduationCap, color: "text-blue-600", bg: "bg-blue-50" },
-  { key: "painting", labelEn: "Painting", labelAr: "دهان", icon: Paintbrush, color: "text-pink-600", bg: "bg-pink-50" },
-  { key: "cleaning", labelEn: "Cleaning", labelAr: "تنظيف", icon: Sparkles, color: "text-emerald-600", bg: "bg-emerald-50" },
-  { key: "delivery", labelEn: "Delivery", labelAr: "توصيل", icon: Truck, color: "text-amber-600", bg: "bg-amber-50" },
-  { key: "other", labelEn: "Other", labelAr: "أخرى", icon: HelpCircle, color: "text-gray-600", bg: "bg-gray-100" },
+  { key: "food", labelKey: "categoryFood" as const, icon: UtensilsCrossed, color: "text-orange-600", bg: "bg-orange-50" },
+  { key: "clothes", labelKey: "categoryClothes" as const, icon: Shirt, color: "text-purple-600", bg: "bg-purple-50" },
+  { key: "education", labelKey: "categoryEducation" as const, icon: GraduationCap, color: "text-blue-600", bg: "bg-blue-50" },
+  { key: "painting", labelKey: "categoryPainting" as const, icon: Paintbrush, color: "text-pink-600", bg: "bg-pink-50" },
+  { key: "cleaning", labelKey: "categoryCleaning" as const, icon: Sparkles, color: "text-emerald-600", bg: "bg-emerald-50" },
+  { key: "delivery", labelKey: "categoryDelivery" as const, icon: Truck, color: "text-amber-600", bg: "bg-amber-50" },
+  { key: "other", labelKey: "categoryOther" as const, icon: HelpCircle, color: "text-gray-600", bg: "bg-gray-100" },
 ];
-
-const STEPS_EN = ["Category", "Details", "Impact", "Review"];
-const STEPS_AR = ["الفئة", "التفاصيل", "الأثر", "المراجعة"];
 
 export default function CreateTaskPage() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const { lang } = useLanguage();
+  const { data: session, status: sessionStatus } = useSession();
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     category: "", title: "", description: "", location: "", maxVolunteers: "5", impactLetter: "",
   });
 
-  const STEPS = lang === "ar" ? STEPS_AR : STEPS_EN;
-  const userId = session?.user?.id || "demo-user-001";
-  const userName = session?.user?.name || "Demo User";
+  const STEPS = [t("stepCategory"), t("stepDetails"), t("stepImpact"), t("stepReview")];
+
+  // Redirect to login if not authenticated
+  if (sessionStatus === "unauthenticated") {
+    router.push("/login");
+    return null;
+  }
 
   function update(key: string, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -60,13 +61,11 @@ export default function CreateTaskPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          creatorId: userId,
-          creatorName: userName,
           ...form,
           maxVolunteers: parseInt(form.maxVolunteers),
         }),
       });
-      if (res.ok) router.push("/dashboard");
+      if (res.ok) router.push("/tasks");
     } finally {
       setSubmitting(false);
     }
@@ -76,18 +75,14 @@ export default function CreateTaskPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-6">
-      {/* Back */}
       <button onClick={() => step > 0 ? setStep(step - 1) : router.back()} className="flex items-center gap-1 text-sm text-emerald-700 hover:text-emerald-800 font-medium mb-4">
         <ArrowRight size={16} className="rtl:rotate-180" />
-        {lang === "ar" ? "العودة" : "Back"}
+        {t("back")}
       </button>
 
-      <h1 className="text-xl font-bold text-emerald-900 mb-1">
-        {lang === "ar" ? "إنشاء مهمة" : "Create Task"}
-      </h1>
+      <h1 className="text-xl font-bold text-emerald-900 mb-1">{t("createTask")}</h1>
       <p className="text-lg font-bold text-gray-900 mb-4">{STEPS[step]}</p>
 
-      {/* Progress bar */}
       <div className="flex gap-1.5 mb-6">
         {STEPS.map((_, i) => (
           <div key={i} className={cn("h-1 flex-1 rounded-full transition-all", i <= step ? "bg-emerald-600" : "bg-gray-200")} />
@@ -111,7 +106,7 @@ export default function CreateTaskPage() {
               >
                 <Icon size={28} className={selected ? cat.color : "text-gray-400"} strokeWidth={1.8} />
                 <span className={cn("text-sm font-bold", selected ? cat.color : "text-gray-600")}>
-                  {lang === "ar" ? cat.labelAr : cat.labelEn}
+                  {t(cat.labelKey)}
                 </span>
               </button>
             );
@@ -123,19 +118,19 @@ export default function CreateTaskPage() {
       {step === 1 && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>{lang === "ar" ? "عنوان المهمة" : "Task Title"}</Label>
-            <Input placeholder={lang === "ar" ? "مثال: توزيع وجبات إفطار" : "e.g., Distribute Iftar Meals"} value={form.title} onChange={(e) => update("title", e.target.value)} />
+            <Label>{t("taskTitle")}</Label>
+            <Input placeholder={t("taskTitlePlaceholder")} value={form.title} onChange={(e) => update("title", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>{lang === "ar" ? "الوصف" : "Description"}</Label>
-            <Textarea placeholder={lang === "ar" ? "ماذا سيفعل المتطوعون؟" : "What will volunteers be doing?"} value={form.description} onChange={(e) => update("description", e.target.value)} rows={4} className="resize-none" />
+            <Label>{t("description")}</Label>
+            <Textarea placeholder={t("taskDescPlaceholder")} value={form.description} onChange={(e) => update("description", e.target.value)} rows={4} className="resize-none" />
           </div>
           <div className="space-y-2">
-            <Label>{lang === "ar" ? "الموقع" : "Location"}</Label>
-            <Input placeholder={lang === "ar" ? "مثال: وسط عمان" : "e.g., Downtown Amman"} value={form.location} onChange={(e) => update("location", e.target.value)} />
+            <Label>{t("location")}</Label>
+            <Input placeholder={t("locationPlaceholder")} value={form.location} onChange={(e) => update("location", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>{lang === "ar" ? "أقصى عدد متطوعين" : "Max Volunteers"}</Label>
+            <Label>{t("maxVolunteers")}</Label>
             <Input type="number" min="1" max="100" value={form.maxVolunteers} onChange={(e) => update("maxVolunteers", e.target.value)} dir="ltr" />
           </div>
         </div>
@@ -146,16 +141,12 @@ export default function CreateTaskPage() {
         <div className="space-y-4">
           <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50 to-white">
             <CardContent className="p-4">
-              <h3 className="text-sm font-bold text-emerald-800 mb-1">
-                {lang === "ar" ? "اكتب رسالة الأثر" : "Write an Impact Letter"}
-              </h3>
-              <p className="text-xs text-gray-500">
-                {lang === "ar" ? "أخبر المتطوعين لماذا هذه المهمة مهمة" : "Tell volunteers why this task matters"}
-              </p>
+              <h3 className="text-sm font-bold text-emerald-800 mb-1">{t("writeImpactLetter")}</h3>
+              <p className="text-xs text-gray-500">{t("impactLetterHint")}</p>
             </CardContent>
           </Card>
           <Textarea
-            placeholder={lang === "ar" ? "لماذا هذه المهمة مهمة؟ ما الأثر الذي ستحدثه؟" : "Why does this task matter? What impact will it create?"}
+            placeholder={t("impactLetterPlaceholder")}
             value={form.impactLetter}
             onChange={(e) => update("impactLetter", e.target.value)}
             rows={6}
@@ -172,13 +163,13 @@ export default function CreateTaskPage() {
             <CardContent className="p-4 space-y-3">
               {selectedCat && (
                 <Badge variant="outline" className={cn("capitalize", selectedCat.color, selectedCat.bg)}>
-                  {lang === "ar" ? selectedCat.labelAr : selectedCat.labelEn}
+                  {t(selectedCat.labelKey)}
                 </Badge>
               )}
               <h3 className="text-base font-bold text-gray-900">{form.title}</h3>
               <p className="text-sm text-gray-600">{form.description}</p>
-              {form.location && <p className="text-xs text-gray-500">{lang === "ar" ? "الموقع:" : "Location:"} {form.location}</p>}
-              <p className="text-xs text-gray-500">{lang === "ar" ? "أقصى عدد متطوعين:" : "Max Volunteers:"} {form.maxVolunteers}</p>
+              {form.location && <p className="text-xs text-gray-500">{t("location")}: {form.location}</p>}
+              <p className="text-xs text-gray-500">{t("maxVolunteers")}: {form.maxVolunteers}</p>
             </CardContent>
           </Card>
 
@@ -186,7 +177,7 @@ export default function CreateTaskPage() {
             <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50 to-white">
               <CardContent className="p-4">
                 <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1.5">
-                  {lang === "ar" ? "رسالة الأثر" : "Impact Letter"}
+                  {t("impactLetter")}
                 </p>
                 <p className="text-sm text-gray-600 italic">&ldquo;{form.impactLetter}&rdquo;</p>
               </CardContent>
@@ -194,11 +185,7 @@ export default function CreateTaskPage() {
           )}
 
           <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
-            <p className="text-xs text-amber-700 font-medium">
-              {lang === "ar"
-                ? "سيتم إرسال مهمتك للموافقة. بعد الموافقة يمكن للمتطوعين الانضمام."
-                : "Your task will be submitted for approval. Once approved, volunteers can join."}
-            </p>
+            <p className="text-xs text-amber-700 font-medium">{t("taskSubmitNotice")}</p>
           </div>
         </div>
       )}
@@ -207,12 +194,12 @@ export default function CreateTaskPage() {
       <div className="mt-6">
         {step < 3 ? (
           <Button onClick={() => setStep(step + 1)} disabled={!canProceed()} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white">
-            {lang === "ar" ? "متابعة" : "Continue"} <ArrowLeft size={16} className="ms-2 rtl:rotate-180" />
+            {t("continueBtn")} <ArrowLeft size={16} className="ms-2 rtl:rotate-180" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={submitting} className="w-full bg-emerald-700 hover:bg-emerald-800 text-white">
-            {submitting ? <><Loader2 size={16} className="animate-spin me-2" /> {lang === "ar" ? "جاري الإرسال..." : "Submitting..."}</> : (
-              <><Check size={16} className="me-2" /> {lang === "ar" ? "إرسال المهمة" : "Submit Task"}</>
+            {submitting ? <><Loader2 size={16} className="animate-spin me-2" /> {t("submitting")}</> : (
+              <><Check size={16} className="me-2" /> {t("submitTask")}</>
             )}
           </Button>
         )}

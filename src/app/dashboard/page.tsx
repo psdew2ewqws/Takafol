@@ -57,7 +57,7 @@ export default function DashboardPage() {
           fetch("/api/dashboard/stats"),
           fetch("/api/posts/my?limit=4"),
           fetch("/api/connections"),
-          fetch("/api/tasks"),
+          fetch("/api/tasks?limit=4"),
         ]);
         const [statsData, postsData, connectionsData] = await Promise.all([
           statsRes.json(), postsRes.json(), connectionsRes.json(),

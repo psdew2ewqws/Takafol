@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Trophy, Medal } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -23,13 +23,16 @@ const MEDAL_COLORS = ["text-amber-500", "text-gray-400", "text-amber-700"];
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const { lang } = useLanguage();
+  const { t } = useLanguage();
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/leaderboard");
-      if (res.ok) setLeaderboard(await res.json());
-      setLoading(false);
+      try {
+        const res = await fetch("/api/leaderboard");
+        if (res.ok) setLeaderboard(await res.json());
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, []);
@@ -42,12 +45,8 @@ export default function LeaderboardPage() {
             <Trophy size={28} className="text-amber-500" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-emerald-900">
-          {lang === "ar" ? "لوحة المتصدرين" : "Leaderboard"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {lang === "ar" ? "أبطال التأثير المجتمعي" : "Community Impact Champions"}
-        </p>
+        <h1 className="text-2xl font-bold text-emerald-900">{t("leaderboardTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("leaderboardSubtitle")}</p>
       </div>
 
       {loading ? (
@@ -57,9 +56,7 @@ export default function LeaderboardPage() {
       ) : leaderboard.length === 0 ? (
         <Card className="border-emerald-100">
           <CardContent className="p-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              {lang === "ar" ? "لا يوجد مشاركون بعد" : "No participants yet"}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("noParticipants")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -89,14 +86,12 @@ export default function LeaderboardPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-gray-900 truncate">{entry.userName}</p>
                   <p className="text-xs text-gray-500">
-                    {entry.tasksCompleted} {lang === "ar" ? "مهام" : "tasks"}
+                    {entry.tasksCompleted} {t("tasks")}
                   </p>
                 </div>
                 <div className="text-end">
                   <p className="text-sm font-extrabold text-emerald-700 tabular-nums">{entry.impactScore}</p>
-                  <p className="text-[10px] text-gray-400 uppercase font-bold">
-                    {lang === "ar" ? "نقاط" : "pts"}
-                  </p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold">{t("points")}</p>
                 </div>
               </div>
             ))}
