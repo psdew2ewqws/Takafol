@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { logConnection } from "@/lib/blockchain";
 import type { ApiResponse, ConnectionWithRelations, CreateConnectionInput } from "@/types";
 
 const CONNECTION_SELECT = {
@@ -19,6 +20,8 @@ const CONNECTION_SELECT = {
   requesterReview: true,
   giverPoints: true,
   requesterPoints: true,
+  blockchainTx: true,
+  blockchainVerified: true,
   createdAt: true,
   updatedAt: true,
   post: {
@@ -31,6 +34,7 @@ const CONNECTION_SELECT = {
       districtId: true,
       urgency: true,
       userId: true,
+      blockchainTx: true,
       createdAt: true,
       updatedAt: true,
       expiresAt: true,
@@ -139,6 +143,27 @@ export async function POST(request: NextRequest) {
       postId: body.postId,
       userId: session.user.id,
     });
+
+    // Log to blockchain (non-blocking)
+    logConnection(connection.id, body.postId, "n/a", giverId, requesterId)
+      .then(async (result) => {
+        if (result) {
+          await prisma.connection.update({
+            where: { id: connection.id },
+            data: { blockchainTx: result.txHash, blockchainVerified: true },
+          });
+          logger.info("Connection blockchain tx logged", "ConnectionsAPI", {
+            connectionId: connection.id,
+            txHash: result.txHash,
+          });
+        }
+      })
+      .catch((err) => {
+        logger.error("Connection blockchain logging failed", "ConnectionsAPI", {
+          connectionId: connection.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
 
     return NextResponse.json<ApiResponse<ConnectionWithRelations>>(
       {

@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChatPanel } from "@/components/chat/chat-panel";
+import { BlockchainProof } from "@/components/blockchain/BlockchainProof";
 import { useLanguage } from "@/components/providers/language-provider";
 import { formatRelativeTime, getUrgencyConfig, truncateText } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -287,6 +288,35 @@ export default function ConnectionDetailPage() {
         <h2 className="mb-3 text-lg font-bold text-emerald-900">{t("conversation")}</h2>
         <ChatPanel connectionId={connection.id} disabled={isChatDisabled} />
       </div>
+
+      {/* Blockchain Proof */}
+      {connection.status === "COMPLETED" && (
+        <Card className="border-emerald-100">
+          <CardContent className="p-4">
+            <BlockchainProof
+              steps={[
+                {
+                  label: lang === "ar" ? "تم إنشاء المنشور" : "Post Created",
+                  txHash: (connection.post as Record<string, unknown>).blockchainTx as string | null,
+                  timestamp: new Date(connection.post.createdAt).toLocaleDateString(),
+                },
+                {
+                  label: lang === "ar" ? "تم إنشاء التواصل" : "Connection Made",
+                  txHash: (connection as unknown as Record<string, unknown>).blockchainTx as string | null,
+                  timestamp: new Date(connection.createdAt).toLocaleDateString(),
+                },
+                {
+                  label: lang === "ar" ? "تم الإكمال" : "Completed",
+                  txHash: (connection as unknown as Record<string, unknown>).blockchainTx as string | null,
+                  timestamp: connection.completedAt
+                    ? new Date(connection.completedAt).toLocaleDateString()
+                    : undefined,
+                },
+              ]}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Rating Dialog */}
       <Dialog open={showRating} onOpenChange={setShowRating}>

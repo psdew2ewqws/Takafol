@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { logCompletion, logTaskCompleted } from "@/lib/blockchain";
 import { IMPACT_POINTS } from "@/lib/constants";
 import type { ApiResponse, ConnectionWithRelations, UpdateConnectionInput } from "@/types";
 
@@ -20,6 +21,8 @@ const CONNECTION_SELECT = {
   requesterReview: true,
   giverPoints: true,
   requesterPoints: true,
+  blockchainTx: true,
+  blockchainVerified: true,
   createdAt: true,
   updatedAt: true,
   post: {
@@ -32,6 +35,7 @@ const CONNECTION_SELECT = {
       districtId: true,
       urgency: true,
       userId: true,
+      blockchainTx: true,
       createdAt: true,
       updatedAt: true,
       expiresAt: true,
@@ -232,6 +236,27 @@ export async function PATCH(
         requesterId: existing.requesterId,
       });
 
+      // Log completion to blockchain (non-blocking)
+      logCompletion(id, session.user.id)
+        .then(async (result) => {
+          if (result) {
+            await prisma.connection.update({
+              where: { id },
+              data: { blockchainTx: result.txHash, blockchainVerified: true },
+            });
+            logger.info("Completion blockchain tx logged", "ConnectionAPI", {
+              connectionId: id,
+              txHash: result.txHash,
+            });
+          }
+        })
+        .catch((err) => {
+          logger.error("Completion blockchain logging failed", "ConnectionAPI", {
+            connectionId: id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+
       return NextResponse.json<ApiResponse<ConnectionWithRelations>>({
         data: updated as unknown as ConnectionWithRelations,
         message: "تم إكمال التواصل بنجاح! تم تحديث نقاط التأثير.",
@@ -243,6 +268,28 @@ export async function PATCH(
       data: updateData,
       select: CONNECTION_SELECT,
     });
+
+    // Log to blockchain when both ratings are submitted
+    if (
+      connection.giverRating &&
+      connection.requesterRating
+    ) {
+      logTaskCompleted(id, connection.giverRating, connection.requesterRating)
+        .then(async (result) => {
+          if (result) {
+            logger.info("TaskCompleted blockchain tx logged", "ConnectionAPI", {
+              connectionId: id,
+              txHash: result.txHash,
+            });
+          }
+        })
+        .catch((err) => {
+          logger.error("TaskCompleted blockchain logging failed", "ConnectionAPI", {
+            connectionId: id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+    }
 
     logger.info("Connection updated", "ConnectionAPI", {
       connectionId: id,

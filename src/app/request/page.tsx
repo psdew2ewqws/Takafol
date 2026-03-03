@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { HelpCircle, Eye, PenSquare, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Eye, PenSquare, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/components/providers/language-provider";
 import Link from "next/link";
 
@@ -12,7 +11,7 @@ export default function RequestHelpPage() {
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
   const { lang, t } = useLanguage();
-  const BackArrow = lang === "ar" ? ArrowLeft : ArrowRight;
+  const Arrow = lang === "ar" ? ChevronLeft : ChevronRight;
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -31,46 +30,37 @@ export default function RequestHelpPage() {
   if (!session) return null;
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-6">
-      <div className="mb-6 text-center">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50">
-          <HelpCircle className="h-7 w-7 text-amber-600" />
-        </div>
+    <div className="container mx-auto max-w-2xl px-4 py-6">
+      <div className="mb-5">
         <h1 className="text-2xl font-bold text-amber-900">{t("requestHubTitle")}</h1>
         <p className="text-sm text-muted-foreground">{t("requestHubSubtitle")}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-2">
         <Link href="/request/offers">
-          <Card className="group h-full cursor-pointer border-emerald-200 bg-emerald-50/50 transition-all hover:border-emerald-300 hover:shadow-lg">
-            <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 transition-transform group-hover:scale-105">
-                <Eye className="h-7 w-7 text-emerald-700" />
-              </div>
-              <h3 className="mb-1 text-lg font-bold text-emerald-900">{t("browseOffers")}</h3>
-              <p className="text-sm text-emerald-700/80">{t("browseOffersDesc")}</p>
-              <span className="mt-3 flex items-center gap-1 text-xs font-medium text-emerald-600">
-                {t("viewAllOffers")}
-                <BackArrow className="h-3 w-3" />
-              </span>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3.5 transition-colors hover:bg-gray-50">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+              <Eye size={20} className="text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900">{t("browseOffers")}</p>
+              <p className="text-xs text-gray-500">{t("browseOffersDesc")}</p>
+            </div>
+            <Arrow size={16} className="shrink-0 text-gray-400" />
+          </div>
         </Link>
 
         <Link href="/request/create">
-          <Card className="group h-full cursor-pointer border-amber-200 bg-amber-50/50 transition-all hover:border-amber-300 hover:shadow-lg">
-            <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 transition-transform group-hover:scale-105">
-                <PenSquare className="h-7 w-7 text-amber-700" />
-              </div>
-              <h3 className="mb-1 text-lg font-bold text-amber-900">{t("createRequest")}</h3>
-              <p className="text-sm text-amber-700/80">{t("createRequestDesc")}</p>
-              <span className="mt-3 flex items-center gap-1 text-xs font-medium text-amber-600">
-                {t("createNewRequest")}
-                <BackArrow className="h-3 w-3" />
-              </span>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3.5 transition-colors hover:bg-gray-50">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50">
+              <PenSquare size={20} className="text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900">{t("createRequest")}</p>
+              <p className="text-xs text-gray-500">{t("createRequestDesc")}</p>
+            </div>
+            <Arrow size={16} className="shrink-0 text-gray-400" />
+          </div>
         </Link>
       </div>
     </div>

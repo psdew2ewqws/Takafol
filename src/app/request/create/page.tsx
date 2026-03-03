@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { HelpCircle, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -115,10 +115,7 @@ export default function CreateRequestPage() {
       </Button>
 
       <Card className="border-amber-200">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50">
-            <HelpCircle className="h-7 w-7 text-amber-600" />
-          </div>
+        <CardHeader>
           <CardTitle className="text-xl font-bold text-amber-900">
             {t("requestHelpFormTitle")}
           </CardTitle>

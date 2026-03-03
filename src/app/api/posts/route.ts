@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { logOffer, logRequest } from "@/lib/blockchain";
 import type { ApiResponse, PostWithRelations, CreatePostInput, PostFilters } from "@/types";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -161,6 +162,32 @@ export async function POST(request: NextRequest) {
       postId: post.id,
       userId: session.user.id,
       type: body.type,
+    });
+
+    // Log to blockchain (non-blocking)
+    const blockchainFn = body.type === "REQUEST" ? logRequest : logOffer;
+    blockchainFn(
+      post.id,
+      session.user.id,
+      category.nameEn,
+      district.nameEn,
+      body.description,
+    ).then(async (result) => {
+      if (result) {
+        await prisma.post.update({
+          where: { id: post.id },
+          data: { blockchainTx: result.txHash, blockchainVerified: true },
+        });
+        logger.info("Post blockchain tx logged", "PostsAPI", {
+          postId: post.id,
+          txHash: result.txHash,
+        });
+      }
+    }).catch((err) => {
+      logger.error("Post blockchain logging failed", "PostsAPI", {
+        postId: post.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     });
 
     return NextResponse.json<ApiResponse<PostWithRelations>>(

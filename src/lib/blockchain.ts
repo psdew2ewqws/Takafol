@@ -74,6 +74,16 @@ export async function logZakatDonation(
   return logToBlockchain('logZakatDonation', donationId, donorId, charityId, amount, currency);
 }
 
+export async function logRequest(
+  requestId: string,
+  requesterId: string,
+  category: string,
+  district: string,
+  description: string
+) {
+  return logToBlockchain('logRequest', requestId, requesterId, category, district, description);
+}
+
 export async function logOffer(
   offerId: string,
   giverId: string,
