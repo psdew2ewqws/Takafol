@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, HandHeart, HelpCircle, LayoutDashboard, User } from "lucide-react";
+import { Home, HandHeart, ClipboardList, Trophy, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/providers/language-provider";
 import type { TranslationKey } from "@/lib/i18n";
@@ -10,8 +10,8 @@ import type { TranslationKey } from "@/lib/i18n";
 const NAV_ITEMS: { href: string; icon: typeof Home; labelKey: TranslationKey }[] = [
   { href: "/", icon: Home, labelKey: "navHome" },
   { href: "/offer", icon: HandHeart, labelKey: "navOffer" },
-  { href: "/request", icon: HelpCircle, labelKey: "navRequest" },
-  { href: "/dashboard", icon: LayoutDashboard, labelKey: "navDashboard" },
+  { href: "/tasks", icon: ClipboardList, labelKey: "navTasks" },
+  { href: "/leaderboard", icon: Trophy, labelKey: "navLeaderboard" },
   { href: "/profile", icon: User, labelKey: "navProfile" },
 ];
 

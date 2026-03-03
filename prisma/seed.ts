@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
@@ -194,7 +195,66 @@ async function main() {
     },
   });
 
-  console.info(`Seeded ${CATEGORIES.length} categories, ${DISTRICTS.length} districts, ${CHARITIES.length} charities, ${PROGRAMS.length} volunteer programs, and 1 admin user`);
+  // Seed sample volunteer tasks
+  const SAMPLE_TASKS = [
+    {
+      id: "task_iftar_distribution",
+      creatorId: (await prisma.user.findFirst({ where: { email: "admin@takafol.com" } }))?.id || "admin",
+      creatorName: "مدير النظام",
+      title: "توزيع وجبات إفطار",
+      description: "توزيع 200 وجبة إفطار على العائلات المحتاجة في منطقة جبل الحسين. نحتاج متطوعين للتعبئة والتوزيع.",
+      category: "food",
+      impactLetter: "كل وجبة هي فرصة لإسعاد عائلة وخلق ذكرى جميلة. انضم لنا واصنع الفرق في رمضان.",
+      maxVolunteers: 15,
+      currentVolunteers: 3,
+      status: "approved",
+      location: "جبل الحسين، عمان",
+    },
+    {
+      id: "task_clothes_sorting",
+      creatorId: (await prisma.user.findFirst({ where: { email: "admin@takafol.com" } }))?.id || "admin",
+      creatorName: "مدير النظام",
+      title: "فرز وتوزيع ملابس",
+      description: "فرز وتوزيع ملابس العيد على الأطفال في مناطق الزرقاء. نحتاج متطوعين للفرز والتغليف.",
+      category: "clothes",
+      impactLetter: "ملابس العيد تعني الكثير للأطفال. ساعدنا نرسم الفرحة على وجوههم.",
+      maxVolunteers: 10,
+      currentVolunteers: 1,
+      status: "approved",
+      location: "الزرقاء",
+    },
+    {
+      id: "task_tutoring",
+      creatorId: (await prisma.user.findFirst({ where: { email: "admin@takafol.com" } }))?.id || "admin",
+      creatorName: "مدير النظام",
+      title: "دروس تقوية للطلاب",
+      description: "تقديم دروس تقوية مجانية في الرياضيات والعلوم لطلاب التوجيهي في إربد.",
+      category: "education",
+      maxVolunteers: 5,
+      currentVolunteers: 0,
+      status: "pending",
+      location: "إربد",
+    },
+  ];
+
+  for (const task of SAMPLE_TASKS) {
+    await prisma.task.upsert({
+      where: { id: task.id },
+      update: {
+        title: task.title,
+        description: task.description,
+        category: task.category,
+        impactLetter: task.impactLetter,
+        maxVolunteers: task.maxVolunteers,
+        currentVolunteers: task.currentVolunteers,
+        status: task.status,
+        location: task.location,
+      },
+      create: task,
+    });
+  }
+
+  console.info(`Seeded ${CATEGORIES.length} categories, ${DISTRICTS.length} districts, ${CHARITIES.length} charities, ${PROGRAMS.length} volunteer programs, ${SAMPLE_TASKS.length} tasks, and 1 admin user`);
 }
 
 main()

@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { HandHeart, HelpCircle, Star, Shield, Users, Heart } from "lucide-react";
+import { HandHeart, HelpCircle, Star, Shield, Users, Heart, ClipboardList, Trophy, Eye } from "lucide-react";
 import { useLanguage } from "@/components/providers/language-provider";
 
 export default function HomePage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   return (
     <div className="ramadan-pattern">
@@ -39,21 +39,37 @@ export default function HomePage() {
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
               <Link
                 href="/offer"
-                className="flex h-36 w-36 flex-col items-center justify-center gap-3 rounded-2xl bg-white text-emerald-800 shadow-lg shadow-emerald-900/30 transition-colors hover:bg-emerald-50 font-bold"
+                className="flex h-32 flex-col items-center justify-center gap-3 rounded-2xl bg-white text-emerald-800 shadow-lg shadow-emerald-900/30 transition-colors hover:bg-emerald-50 font-bold"
               >
-                <HandHeart className="h-8 w-8" />
-                <span className="text-base">{t("offerHelp")}</span>
+                <HandHeart className="h-7 w-7" />
+                <span className="text-sm">{t("offerHelp")}</span>
               </Link>
 
               <Link
                 href="/request"
-                className="flex h-36 w-36 flex-col items-center justify-center gap-3 rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-900/30 transition-colors hover:bg-amber-600 font-bold"
+                className="flex h-32 flex-col items-center justify-center gap-3 rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-900/30 transition-colors hover:bg-amber-600 font-bold"
               >
-                <HelpCircle className="h-8 w-8" />
-                <span className="text-base">{t("requestHelp")}</span>
+                <HelpCircle className="h-7 w-7" />
+                <span className="text-sm">{t("requestHelp")}</span>
+              </Link>
+
+              <Link
+                href="/tasks"
+                className="flex h-32 flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 text-white border border-white/20 backdrop-blur-sm transition-colors hover:bg-white/20 font-bold"
+              >
+                <ClipboardList className="h-7 w-7" />
+                <span className="text-sm">{t("navTasks")}</span>
+              </Link>
+
+              <Link
+                href="/leaderboard"
+                className="flex h-32 flex-col items-center justify-center gap-3 rounded-2xl bg-white/10 text-white border border-white/20 backdrop-blur-sm transition-colors hover:bg-white/20 font-bold"
+              >
+                <Trophy className="h-7 w-7" />
+                <span className="text-sm">{t("navLeaderboard")}</span>
               </Link>
             </div>
           </div>
@@ -88,6 +104,62 @@ export default function HomePage() {
             title={t("featureImpact")}
             description={t("featureImpactDesc")}
           />
+        </div>
+      </section>
+
+      {/* Why Us Section */}
+      <section className="border-t border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-amber-50">
+        <div className="container mx-auto px-4 py-16 md:py-24">
+          <h2 className="mb-4 text-center text-2xl font-bold text-emerald-800 md:text-3xl">
+            {lang === "ar" ? "لماذا تكافل؟" : "Why Takafol?"}
+          </h2>
+          <p className="mb-12 text-center text-sm text-gray-600 max-w-lg mx-auto">
+            {lang === "ar"
+              ? "هل تبرعت يوماً وسألت نفسك: هل وصل تبرعي؟ هل أحدثت فرقاً؟ مع تكافل، كل عمل خير موثق ومُثبت."
+              : "Have you ever donated and asked yourself: Where did this donation go? Did I make an impact? With Takafol, every good deed is documented and proven."}
+          </p>
+
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="rounded-2xl border border-emerald-100 bg-white p-6 text-center shadow-sm">
+              <div className="mb-4 flex h-14 w-14 mx-auto items-center justify-center rounded-xl bg-emerald-50">
+                <Eye className="h-7 w-7 text-emerald-600" />
+              </div>
+              <h3 className="mb-2 text-base font-bold text-gray-900">
+                {lang === "ar" ? "شفافية كاملة" : "Full Transparency"}
+              </h3>
+              <p className="text-xs leading-relaxed text-gray-500">
+                {lang === "ar"
+                  ? "كل تبرع وكل عمل تطوعي مسجل على البلوكتشين — لا يمكن تعديله أو حذفه أو تزييفه."
+                  : "Every donation and every volunteer action is recorded on blockchain — it can't be edited, deleted, or faked."}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-amber-100 bg-white p-6 text-center shadow-sm">
+              <div className="mb-4 flex h-14 w-14 mx-auto items-center justify-center rounded-xl bg-amber-50">
+                <Star className="h-7 w-7 text-amber-500" />
+              </div>
+              <h3 className="mb-2 text-base font-bold text-gray-900">
+                {lang === "ar" ? "تجربة ممتعة" : "Gamified Impact"}
+              </h3>
+              <p className="text-xs leading-relaxed text-gray-500">
+                {lang === "ar"
+                  ? "اكسب نقاط تأثير، اصعد في لوحة المتصدرين، واحصل على شهادات بلوكتشين مع كل مهمة تكملها."
+                  : "Earn impact points, climb the leaderboard, and get blockchain certificates with every task you complete."}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-emerald-100 bg-white p-6 text-center shadow-sm">
+              <div className="mb-4 flex h-14 w-14 mx-auto items-center justify-center rounded-xl bg-emerald-50">
+                <Heart className="h-7 w-7 text-emerald-600" />
+              </div>
+              <h3 className="mb-2 text-base font-bold text-gray-900">
+                {lang === "ar" ? "صداقات حقيقية" : "Real Connections"}
+              </h3>
+              <p className="text-xs leading-relaxed text-gray-500">
+                {lang === "ar"
+                  ? "كل مهمة فرصة لتكوين صداقة جديدة وخلق ذكرى دائمة. تكافل ليس مشروع رمضان — إنه تكافل مستمر."
+                  : "Every task is a chance to make a new friend and create a lasting memory. Takafol isn't a Ramadan project — it's ongoing solidarity."}
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

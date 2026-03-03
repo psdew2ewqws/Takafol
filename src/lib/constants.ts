@@ -23,6 +23,9 @@ export const IMPACT_POINTS = {
   REVIEW_GIVEN: 3,
   VOLUNTEER_COMPLETED: 15,
   DONATION_MADE: 25,
+  TASK_JOINED: 5,
+  TASK_PROOF_SUBMITTED: 15,
+  TASK_CREATED: 3,
 } as const;
 
 export const POST_EXPIRY_DAYS = 7;
@@ -41,4 +44,7 @@ export const ROUTES = {
   POSTS: "/posts",
   CONNECTIONS: "/connections",
   CHARITIES: "/charities",
+  TASKS: "/tasks",
+  TASKS_CREATE: "/tasks/create",
+  LEADERBOARD: "/leaderboard",
 } as const;

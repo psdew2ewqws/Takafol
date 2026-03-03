@@ -371,3 +371,73 @@ model Report {
   @@index([status])
   @@map("reports")
 }
+
+// ─── Task (Volunteering) ────────────────────────────────
+
+model Task {
+  id                String   @id @default(cuid())
+  creatorId         String   @map("creator_id")
+  creatorName       String   @default("Anonymous") @map("creator_name")
+  title             String
+  description       String   @db.Text
+  category          String
+  impactLetter      String?  @map("impact_letter") @db.Text
+  maxVolunteers     Int      @map("max_volunteers")
+  currentVolunteers Int      @default(0) @map("current_volunteers")
+  status            String   @default("pending") // pending, approved, in_progress, completed, rejected
+  location          String?
+  district          String?
+  txHash            String?  @map("tx_hash")
+  explorerUrl       String?  @map("explorer_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  applications TaskApplication[]
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([category])
+  @@map("tasks")
+}
+
+// ─── Task Application ───────────────────────────────────
+
+model TaskApplication {
+  id              String  @id @default(cuid())
+  taskId          String  @map("task_id")
+  volunteerId     String  @map("volunteer_id")
+  volunteerName   String  @map("volunteer_name")
+  status          String  @default("pending") // pending, accepted, rejected, completed
+  proofPhotoBase64 String? @map("proof_photo_base64") @db.Text
+  proofHash       String? @map("proof_hash")
+  proofTxHash     String? @map("proof_tx_hash")
+  proofExplorerUrl String? @map("proof_explorer_url")
+  completedAt     DateTime? @map("completed_at")
+
+  appliedAt DateTime @default(now()) @map("applied_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, volunteerId])
+  @@index([taskId])
+  @@index([volunteerId])
+  @@map("task_applications")
+}
+
+// ─── User Impact (Leaderboard) ──────────────────────────
+
+model UserImpact {
+  id             String  @id @default(cuid())
+  userId         String  @unique @map("user_id")
+  userName       String  @default("Anonymous") @map("user_name")
+  avatarUrl      String? @map("avatar_url")
+  impactScore    Int     @default(0) @map("impact_score")
+  tasksCompleted Int     @default(0) @map("tasks_completed")
+  totalDonated   Float   @default(0) @map("total_donated")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_impacts")
+}
