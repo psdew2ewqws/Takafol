@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -25,8 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PostCard } from "@/components/posts/post-card";
+import { ConnectionCard } from "@/components/connections/connection-card";
 import { useLanguage } from "@/components/providers/language-provider";
-import type { District } from "@/types";
+import { toast } from "sonner";
+import type { District, PostWithRelations, ConnectionWithRelations } from "@/types";
 
 interface UserProfile {
   id: string;
@@ -53,14 +57,20 @@ export default function ProfilePage() {
   const [districts, setDistricts] = useState<District[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   // Editable fields
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [districtId, setDistrictId] = useState(NO_DISTRICT);
+
+  // Tab data
+  const [myPosts, setMyPosts] = useState<PostWithRelations[]>([]);
+  const [myConnections, setMyConnections] = useState<ConnectionWithRelations[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [postsLoaded, setPostsLoaded] = useState(false);
+  const [connectionsLoaded, setConnectionsLoaded] = useState(false);
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -100,8 +110,6 @@ export default function ProfilePage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    setSuccess("");
     setSaving(true);
 
     try {
@@ -118,16 +126,42 @@ export default function ProfilePage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || t("unexpectedError"));
+        toast.error(data.error || t("unexpectedError"));
         return;
       }
 
       setProfile(data.data);
-      setSuccess(t("savedSuccessfully"));
+      toast.success(t("savedSuccessfully"));
     } catch {
-      setError(t("unexpectedError"));
+      toast.error(t("unexpectedError"));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function loadMyPosts() {
+    if (postsLoaded) return;
+    setPostsLoading(true);
+    try {
+      const res = await fetch("/api/posts/my");
+      const data = await res.json();
+      if (data.data) setMyPosts(data.data);
+      setPostsLoaded(true);
+    } finally {
+      setPostsLoading(false);
+    }
+  }
+
+  async function loadMyConnections() {
+    if (connectionsLoaded) return;
+    setConnectionsLoading(true);
+    try {
+      const res = await fetch("/api/connections");
+      const data = await res.json();
+      if (data.data) setMyConnections(data.data);
+      setConnectionsLoaded(true);
+    } finally {
+      setConnectionsLoading(false);
     }
   }
 
@@ -189,92 +223,140 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Edit Form */}
-      <Card className="border-emerald-100">
-        <CardHeader>
-          <CardTitle className="text-lg font-bold text-emerald-900">
-            {t("editProfile")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSave} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="name">{t("name")}</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={100}
-              />
+      {/* Tabs */}
+      <Tabs
+        defaultValue="edit"
+        onValueChange={(v) => {
+          if (v === "posts") loadMyPosts();
+          if (v === "connections") loadMyConnections();
+        }}
+      >
+        <TabsList className="w-full">
+          <TabsTrigger value="edit">{t("editProfileTab")}</TabsTrigger>
+          <TabsTrigger value="posts">{t("myPosts")}</TabsTrigger>
+          <TabsTrigger value="connections">{t("myConnectionsTab")}</TabsTrigger>
+        </TabsList>
+
+        {/* Edit Profile Tab */}
+        <TabsContent value="edit">
+          <Card className="border-emerald-100">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-emerald-900">
+                {t("editProfile")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSave} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="name">{t("name")}</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={100}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">{t("phone")}</Label>
+                  <Input
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="07xxxxxxxx"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="district">{t("district")}</Label>
+                  <Select value={districtId} onValueChange={setDistrictId}>
+                    <SelectTrigger id="district">
+                      <SelectValue placeholder={t("selectYourDistrict")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_DISTRICT}>{t("notSpecified")}</SelectItem>
+                      {districts.map((dist) => (
+                        <SelectItem key={dist.id} value={dist.id}>
+                          {lang === "ar" ? dist.nameAr : dist.nameEn}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bio">{t("bio")}</Label>
+                  <Textarea
+                    id="bio"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder={t("bioPlaceholder")}
+                    rows={3}
+                    maxLength={500}
+                    className="resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">{bio.length}/500</p>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full bg-emerald-700 text-white hover:bg-emerald-800"
+                >
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <><Save className="mx-1 h-4 w-4" /> {t("save")}</>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* My Posts Tab */}
+        <TabsContent value="posts">
+          {postsLoading ? (
+            <div className="flex min-h-[20vh] items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">{t("phone")}</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="07xxxxxxxx"
-                dir="ltr"
-              />
+          ) : myPosts.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+                <p>{t("noPostsYet")}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              {myPosts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
             </div>
+          )}
+        </TabsContent>
 
-            <div className="space-y-2">
-              <Label htmlFor="district">{t("district")}</Label>
-              <Select value={districtId} onValueChange={setDistrictId}>
-                <SelectTrigger id="district">
-                  <SelectValue placeholder={t("selectYourDistrict")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_DISTRICT}>{t("notSpecified")}</SelectItem>
-                  {districts.map((dist) => (
-                    <SelectItem key={dist.id} value={dist.id}>
-                      {lang === "ar" ? dist.nameAr : dist.nameEn}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {/* My Connections Tab */}
+        <TabsContent value="connections">
+          {connectionsLoading ? (
+            <div className="flex min-h-[20vh] items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bio">{t("bio")}</Label>
-              <Textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder={t("bioPlaceholder")}
-                rows={3}
-                maxLength={500}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">{bio.length}/500</p>
+          ) : myConnections.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+                <p>{t("noConnectionsYet")}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              {myConnections.map((conn) => (
+                <ConnectionCard key={conn.id} connection={conn} />
+              ))}
             </div>
-
-            {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                {success}
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={saving}
-              className="w-full bg-emerald-700 text-white hover:bg-emerald-800"
-            >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <><Save className="mx-1 h-4 w-4" /> {t("save")}</>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

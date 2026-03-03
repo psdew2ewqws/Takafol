@@ -347,6 +347,80 @@ export const translations = {
   personalOfferSubtitle: { ar: "تصفح طلبات المساعدة أو أنشئ عرضاً شخصياً", en: "Browse help requests or create a personal offer" },
   requestHelpFormTitle: { ar: "طلب مساعدة", en: "Request Help" },
   requestHelpFormSubtitle: { ar: "اشرح ما تحتاج — سيظهر طلبك لمن يريد المساعدة", en: "Describe what you need — your request will be visible to helpers" },
+
+  // ─── AI Tagging ────────────────────────────────────────
+  aiSuggests: { ar: "اقتراح الذكاء الاصطناعي", en: "AI suggests" },
+  classifying: { ar: "جاري التصنيف...", en: "Classifying..." },
+
+  // ─── Profile Tabs ─────────────────────────────────────
+  editProfileTab: { ar: "تعديل الملف", en: "Edit Profile" },
+  myPosts: { ar: "منشوراتي", en: "My Posts" },
+  myConnectionsTab: { ar: "تواصلاتي", en: "My Connections" },
+
+  // ─── Admin Sidebar ────────────────────────────────────
+  adminDashboard: { ar: "لوحة القيادة", en: "Dashboard" },
+  adminCharities: { ar: "الجمعيات الخيرية", en: "Charities" },
+  adminPrograms: { ar: "البرامج", en: "Programs" },
+  adminReports: { ar: "البلاغات", en: "Reports" },
+  adminUsers: { ar: "المستخدمين", en: "Users" },
+  adminAnalytics: { ar: "الإحصائيات", en: "Analytics" },
+
+  // ─── Charity Management ───────────────────────────────
+  addCharity: { ar: "إضافة جمعية", en: "Add Charity" },
+  editCharity: { ar: "تعديل الجمعية", en: "Edit Charity" },
+  charityName: { ar: "اسم الجمعية (إنجليزي)", en: "Charity Name (English)" },
+  charityNameAr: { ar: "اسم الجمعية (عربي)", en: "Charity Name (Arabic)" },
+  charityDescription: { ar: "الوصف (إنجليزي)", en: "Description (English)" },
+  charityDescriptionAr: { ar: "الوصف (عربي)", en: "Description (Arabic)" },
+  charityWebsite: { ar: "الموقع الإلكتروني", en: "Website" },
+  charityVerified: { ar: "موثقة", en: "Verified" },
+  charityActive: { ar: "مفعّلة", en: "Active" },
+  charityInactive: { ar: "معطّلة", en: "Inactive" },
+  deactivate: { ar: "تعطيل", en: "Deactivate" },
+  activate: { ar: "تفعيل", en: "Activate" },
+  noCharities: { ar: "لا توجد جمعيات خيرية", en: "No charities found" },
+
+  // ─── Program Management ───────────────────────────────
+  addProgram: { ar: "إضافة برنامج", en: "Add Program" },
+  editProgram: { ar: "تعديل البرنامج", en: "Edit Program" },
+  programTitle: { ar: "عنوان البرنامج (إنجليزي)", en: "Program Title (English)" },
+  programTitleAr: { ar: "عنوان البرنامج (عربي)", en: "Program Title (Arabic)" },
+  programDescription: { ar: "وصف البرنامج (إنجليزي)", en: "Program Description (English)" },
+  programDescriptionAr: { ar: "وصف البرنامج (عربي)", en: "Program Description (Arabic)" },
+  programCharity: { ar: "الجمعية الخيرية", en: "Charity" },
+  programCapacity: { ar: "السعة", en: "Capacity" },
+  programEnrolled: { ar: "المسجلين", en: "Enrolled" },
+  noPrograms2: { ar: "لا توجد برامج تطوعية", en: "No volunteer programs found" },
+
+  // ─── Reports Moderation ───────────────────────────────
+  reportReason: { ar: "سبب البلاغ", en: "Report Reason" },
+  reportedUser: { ar: "المستخدم المُبلّغ عنه", en: "Reported User" },
+  reporter: { ar: "المُبلّغ", en: "Reporter" },
+  reportStatus: { ar: "حالة البلاغ", en: "Report Status" },
+  dismiss: { ar: "رفض", en: "Dismiss" },
+  resolve: { ar: "حل", en: "Resolve" },
+  adminNote: { ar: "ملاحظة المشرف", en: "Admin Note" },
+  noReports: { ar: "لا توجد بلاغات", en: "No reports found" },
+  reviewing: { ar: "قيد المراجعة", en: "Reviewing" },
+  resolved: { ar: "تم الحل", en: "Resolved" },
+  dismissed: { ar: "مرفوض", en: "Dismissed" },
+
+  // ─── Analytics ─────────────────────────────────────────
+  analyticsTitle: { ar: "إحصائيات المنصة", en: "Platform Analytics" },
+  categoryBreakdown: { ar: "توزيع الفئات", en: "Category Breakdown" },
+  districtBreakdown: { ar: "توزيع المناطق", en: "District Breakdown" },
+  completionRate: { ar: "معدل الإكمال", en: "Completion Rate" },
+  totalLabel: { ar: "الإجمالي", en: "Total" },
+  ofTotal: { ar: "من الإجمالي", en: "of total" },
+
+  // ─── Toast ────────────────────────────────────────────
+  errorOccurred: { ar: "حدث خطأ", en: "An error occurred" },
+  savedSuccess: { ar: "تم الحفظ بنجاح", en: "Saved successfully" },
+  deletedSuccess: { ar: "تم الحذف بنجاح", en: "Deleted successfully" },
+  createdSuccess: { ar: "تم الإنشاء بنجاح", en: "Created successfully" },
+  updatedSuccess: { ar: "تم التحديث بنجاح", en: "Updated successfully" },
+  connectionCreated: { ar: "تم إنشاء التواصل", en: "Connection created" },
+  postPublished: { ar: "تم نشر المنشور", en: "Post published" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
