@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   HeartHandshake, Megaphone, Star, Shield, Users, Heart,
@@ -184,7 +185,7 @@ export default function HomePage() {
               initial={{ opacity: 0, scale: 0.92, y: 60 }}
               animate={{
                 opacity: 1, scale: 1, y: 0,
-                maxWidth: activeView ? 900 : 400,
+                maxWidth: activeView ? 900 : 440,
                 maxHeight: activeView ? "90vh" : "85vh",
               }}
               exit={{ opacity: 0, scale: 0.95, y: 40 }}
@@ -264,10 +265,10 @@ export default function HomePage() {
                         >
                           <HeartHandshake className="mx-auto h-9 w-9 text-emerald-600 mb-2" strokeWidth={1.6} />
                         </motion.div>
-                        <h3 className="text-lg font-bold text-gray-900">
+                        <h3 className="text-xl font-bold text-gray-900">
                           {t("offerHubTitle")}
                         </h3>
-                        <p className="text-xs text-gray-400 mt-0.5">{t("offerHubSubtitle")}</p>
+                        <p className="text-sm text-gray-500 mt-1">{t("offerHubSubtitle")}</p>
                       </div>
                     </div>
 
@@ -281,10 +282,10 @@ export default function HomePage() {
                           transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
                         >
                           <PopupOption
-                            icon={<Gift className="h-6 w-6 text-amber-500" strokeWidth={1.7} />}
+                            icon={<Gift className="h-7 w-7 text-amber-500" strokeWidth={1.7} />}
                             title={t("personalContribution")}
                             description={t("personalContributionDesc")}
-                            arrow={<Arrow size={15} className="text-gray-300" />}
+                            arrow={<Arrow size={18} className="text-gray-400" />}
                             onClick={() => setActiveView("personal")}
                           />
                         </motion.div>
@@ -294,10 +295,10 @@ export default function HomePage() {
                           transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 25 }}
                         >
                           <PopupOption
-                            icon={<Compass className="h-6 w-6 text-emerald-600" strokeWidth={1.7} />}
+                            icon={<Compass className="h-7 w-7 text-emerald-600" strokeWidth={1.7} />}
                             title={t("browseRequests")}
                             description={t("browseRequestsDesc")}
-                            arrow={<Arrow size={15} className="text-gray-300" />}
+                            arrow={<Arrow size={18} className="text-gray-400" />}
                             onClick={() => setActiveView("browse-requests")}
                           />
                         </motion.div>
@@ -312,7 +313,7 @@ export default function HomePage() {
                       {/* Charities Section */}
                       <div className="px-4 pt-2 pb-4">
                         <motion.p
-                          className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2"
+                          className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.2 }}
@@ -345,8 +346,8 @@ export default function HomePage() {
                               return (
                                 <motion.button
                                   key={charity.id}
-                                  className={`flex w-full items-center gap-3 px-3.5 py-3 text-start transition-colors hover:bg-gray-50/80 cursor-pointer ${
-                                    i < charities.length - 1 ? "border-b border-gray-50" : ""
+                                  className={`flex w-full items-center gap-3.5 px-4 py-3.5 text-start transition-colors hover:bg-gray-50/80 cursor-pointer ${
+                                    i < charities.length - 1 ? "border-b border-gray-100" : ""
                                   }`}
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
@@ -362,28 +363,40 @@ export default function HomePage() {
                                     router.push(`/offer/charities/${charity.id}`);
                                   }}
                                 >
-                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
-                                    <HandHeart size={16} className="text-emerald-600" />
-                                  </div>
+                                  {charity.logoUrl ? (
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100 overflow-hidden">
+                                      <Image
+                                        src={charity.logoUrl}
+                                        alt={name}
+                                        width={36}
+                                        height={36}
+                                        className="object-contain p-0.5"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+                                      <HandHeart size={16} className="text-emerald-600" />
+                                    </div>
+                                  )}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5">
-                                      <p className="text-[13px] font-bold text-gray-900 truncate">{name}</p>
+                                      <p className="text-sm font-bold text-gray-900 truncate">{name}</p>
                                       {charity.isVerified && (
-                                        <BadgeCheck size={13} className="shrink-0 text-emerald-600" />
+                                        <BadgeCheck size={14} className="shrink-0 text-emerald-600" />
                                       )}
                                     </div>
                                     {desc && (
-                                      <p className="text-[11px] text-gray-400 truncate mt-0.5">{desc}</p>
+                                      <p className="text-xs text-gray-500 truncate mt-0.5">{desc}</p>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1.5 shrink-0">
+                                  <div className="flex items-center gap-2 shrink-0">
                                     {charity._count && charity._count.volunteerPrograms > 0 && (
-                                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-emerald-200 text-emerald-700">
-                                        <Users size={9} className="me-0.5" />
+                                      <Badge variant="outline" className="text-[10px] px-2 py-0.5 h-5 border-emerald-200 text-emerald-700">
+                                        <Users size={10} className="me-0.5" />
                                         {charity._count.volunteerPrograms}
                                       </Badge>
                                     )}
-                                    <Arrow size={14} className="text-gray-300" />
+                                    <Arrow size={16} className="text-gray-400" />
                                   </div>
                                 </motion.button>
                               );
@@ -420,7 +433,7 @@ export default function HomePage() {
                         >
                           <Megaphone className="mx-auto h-9 w-9 text-amber-500 mb-2" strokeWidth={1.6} />
                         </motion.div>
-                        <h3 className="text-lg font-bold text-gray-900">
+                        <h3 className="text-xl font-bold text-gray-900">
                           {t("requestHelp")}
                         </h3>
                       </div>
@@ -435,10 +448,10 @@ export default function HomePage() {
                         transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
                       >
                         <PopupOption
-                          icon={<Telescope className="h-6 w-6 text-emerald-600" strokeWidth={1.7} />}
+                          icon={<Telescope className="h-7 w-7 text-emerald-600" strokeWidth={1.7} />}
                           title={t("browseOffers")}
                           description={t("browseOffersDesc")}
-                          arrow={<Arrow size={15} className="text-gray-300" />}
+                          arrow={<Arrow size={18} className="text-gray-400" />}
                           onClick={() => setActiveView("browse-offers")}
                         />
                       </motion.div>
@@ -448,10 +461,10 @@ export default function HomePage() {
                         transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 25 }}
                       >
                         <PopupOption
-                          icon={<Feather className="h-6 w-6 text-amber-500" strokeWidth={1.7} />}
+                          icon={<Feather className="h-7 w-7 text-amber-500" strokeWidth={1.7} />}
                           title={t("createRequest")}
                           description={t("createRequestDesc")}
-                          arrow={<Arrow size={15} className="text-gray-300" />}
+                          arrow={<Arrow size={18} className="text-gray-400" />}
                           onClick={() => setActiveView("create-request")}
                         />
                       </motion.div>
@@ -580,13 +593,13 @@ function PopupOption({
   return (
     <motion.button
       onClick={onClick}
-      className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-start transition-colors hover:bg-gray-50/80 cursor-pointer"
+      className="flex w-full items-center gap-4 rounded-2xl px-4 py-4 text-start transition-colors hover:bg-gray-50/80 cursor-pointer"
       whileTap={{ scale: 0.98 }}
     >
       <div className="shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-bold text-gray-900">{title}</p>
-        <p className="text-[11px] leading-relaxed text-gray-400 line-clamp-2 mt-0.5">{description}</p>
+        <p className="text-[15px] font-bold text-gray-900">{title}</p>
+        <p className="text-[13px] leading-relaxed text-gray-500 line-clamp-2 mt-0.5">{description}</p>
       </div>
       <div className="shrink-0">{arrow}</div>
     </motion.button>
