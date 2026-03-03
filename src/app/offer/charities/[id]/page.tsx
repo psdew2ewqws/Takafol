@@ -28,7 +28,6 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/components/providers/language-provider";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 interface VolunteerProgram {
   id: string;
@@ -147,12 +146,10 @@ export default function CharityDetailPage() {
         <CardContent className="flex flex-col items-center p-6 text-center">
           {charity.logoUrl ? (
             <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-white border border-gray-100 overflow-hidden">
-              <Image
+              <img
                 src={charity.logoUrl}
                 alt={charityName}
-                width={80}
-                height={80}
-                className="object-contain p-2"
+                className="h-20 w-20 object-contain p-2"
               />
             </div>
           ) : (

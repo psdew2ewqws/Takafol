@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   HandHeart, HelpCircle, Star, Shield, Users, Heart,
@@ -22,10 +21,11 @@ import {
   InlinePersonalOffer,
   InlineBrowseRequests,
   InlineCreateOffer,
+  InlineCharityDetail,
 } from "@/components/home/inline-views";
 
 type PopupType = "offer" | "request" | null;
-type ActiveView = "browse-offers" | "create-request" | "personal" | "browse-requests" | "create-offer" | null;
+type ActiveView = "browse-offers" | "create-request" | "personal" | "browse-requests" | "create-offer" | "charity-detail" | null;
 
 interface Charity {
   id: string;
@@ -45,6 +45,8 @@ export default function HomePage() {
   const [activeView, setActiveView] = useState<ActiveView>(null);
   const [charities, setCharities] = useState<Charity[]>([]);
   const [charitiesLoading, setCharitiesLoading] = useState(false);
+  const [selectedCharityId, setSelectedCharityId] = useState<string | null>(null);
+  const [selectedCharityName, setSelectedCharityName] = useState("");
   const Arrow = lang === "ar" ? ChevronLeft : ChevronRight;
   const BackArrow = lang === "ar" ? ArrowRight : ArrowLeft;
 
@@ -221,6 +223,7 @@ export default function HomePage() {
                           {activeView === "personal" && t("personalContribution")}
                           {activeView === "browse-requests" && t("browseRequests")}
                           {activeView === "create-offer" && t("createOffer")}
+                          {activeView === "charity-detail" && selectedCharityName}
                         </p>
                       </div>
                       <button
@@ -238,6 +241,7 @@ export default function HomePage() {
                       {activeView === "personal" && <InlinePersonalOffer onCreateOffer={() => setActiveView("create-offer")} />}
                       {activeView === "browse-requests" && <InlineBrowseRequests />}
                       {activeView === "create-offer" && <InlineCreateOffer onSuccess={() => setActiveView("personal")} />}
+                      {activeView === "charity-detail" && selectedCharityId && <InlineCharityDetail charityId={selectedCharityId} />}
                     </div>
 
                     {/* Bottom accent bar */}
@@ -364,18 +368,18 @@ export default function HomePage() {
                                   }}
                                   whileTap={{ scale: 0.98 }}
                                   onClick={() => {
-                                    closePopup();
-                                    router.push(`/offer/charities/${charity.id}`);
+                                    const name = lang === "ar" ? charity.nameAr : charity.name;
+                                    setSelectedCharityId(charity.id);
+                                    setSelectedCharityName(name);
+                                    setActiveView("charity-detail");
                                   }}
                                 >
                                   {charity.logoUrl ? (
                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100 overflow-hidden">
-                                      <Image
+                                      <img
                                         src={charity.logoUrl}
                                         alt={name}
-                                        width={36}
-                                        height={36}
-                                        className="object-contain p-0.5"
+                                        className="h-9 w-9 object-contain p-0.5"
                                       />
                                     </div>
                                   ) : (

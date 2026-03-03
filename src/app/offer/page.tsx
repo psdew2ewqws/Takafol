@@ -14,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/components/providers/language-provider";
 import Link from "next/link";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface Charity {
@@ -42,12 +41,14 @@ interface NahnoOpportunity {
   orgUrl: string;
   orgLogo: string;
   progressPercent: number;
-  source?: "nahno" | "tua";
+  source?: "nahno" | "tua" | "volunteerworld" | "goabroad";
 }
 
 const SOURCE_STYLES = {
   nahno: { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200", label: "نَحْنُ" },
   tua: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200", label: "تكية أم علي" },
+  volunteerworld: { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200", label: "Volunteer World" },
+  goabroad: { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200", label: "GoAbroad" },
 } as const;
 
 export default function OfferHelpPage() {
@@ -371,12 +372,10 @@ export default function OfferHelpPage() {
                     )}>
                       {charity.logoUrl ? (
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100 overflow-hidden">
-                          <Image
+                          <img
                             src={charity.logoUrl}
                             alt={name}
-                            width={40}
-                            height={40}
-                            className="object-contain p-0.5"
+                            className="h-10 w-10 object-contain p-0.5"
                           />
                         </div>
                       ) : (
