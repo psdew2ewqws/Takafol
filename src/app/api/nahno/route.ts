@@ -57,6 +57,14 @@ async function triggerScrape(): Promise<void> {
     }).catch((err) => {
       console.error("[nahno-api] Background scrape failed:", err.message);
     });
+
+    // Also sync charity volunteer programs in background
+    execAsync("npx tsx scripts/sync-charity-programs.ts --scrape", {
+      cwd: process.cwd(),
+      timeout: 180000,
+    }).catch((err) => {
+      console.error("[nahno-api] Background charity sync failed:", err.message);
+    });
   } catch (err) {
     console.error("[nahno-api] Failed to start scrape:", err);
   }

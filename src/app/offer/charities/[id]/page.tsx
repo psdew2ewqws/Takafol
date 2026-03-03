@@ -97,9 +97,33 @@ export default function CharityDetailPage() {
 
   async function handleApply(programId: string) {
     setApplyingTo(programId);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setApplied((prev) => new Set(prev).add(programId));
-    setApplyingTo(null);
+    try {
+      const res = await fetch(`/api/programs/${programId}/apply`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setApplied((prev) => new Set(prev).add(programId));
+        // Update enrolled count locally
+        if (charity) {
+          setCharity({
+            ...charity,
+            volunteerPrograms: charity.volunteerPrograms.map((p) =>
+              p.id === programId ? { ...p, enrolled: p.enrolled + 1 } : p
+            ),
+          });
+        }
+      } else {
+        // If already applied, still mark as applied in UI
+        if (data.error?.includes("مسبقاً")) {
+          setApplied((prev) => new Set(prev).add(programId));
+        }
+      }
+    } catch {
+      // Silently handle error
+    } finally {
+      setApplyingTo(null);
+    }
   }
 
   if (loading) {
