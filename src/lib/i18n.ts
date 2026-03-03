@@ -1,0 +1,287 @@
+export type Lang = "ar" | "en";
+
+export const translations = {
+  // ─── Common ──────────────────────────────────────────
+  appName: { ar: "تكافل", en: "Takafol" },
+  loading: { ar: "جاري التحميل...", en: "Loading..." },
+  back: { ar: "العودة", en: "Back" },
+  save: { ar: "حفظ التغييرات", en: "Save Changes" },
+  cancel: { ar: "إلغاء", en: "Cancel" },
+  delete: { ar: "حذف", en: "Delete" },
+  search: { ar: "بحث", en: "Search" },
+  all: { ar: "الكل", en: "All" },
+  submit: { ar: "إرسال", en: "Submit" },
+  noResults: { ar: "لا توجد نتائج", en: "No results found" },
+  loginRequired: { ar: "سجل دخولك أولاً", en: "Please log in first" },
+  loginToConnect: { ar: "سجل دخولك للتواصل", en: "Log in to connect" },
+  unexpectedError: { ar: "حدث خطأ غير متوقع", en: "An unexpected error occurred" },
+
+  // ─── Nav ─────────────────────────────────────────────
+  navHome: { ar: "الرئيسية", en: "Home" },
+  navOffer: { ar: "أعرض", en: "Offer" },
+  navRequest: { ar: "أطلب", en: "Request" },
+  navDashboard: { ar: "لوحتي", en: "Dashboard" },
+  navProfile: { ar: "حسابي", en: "Profile" },
+
+  // ─── Home Page ───────────────────────────────────────
+  heroSubtitle: { ar: "منصة التأثير المجتمعي الموثق", en: "Verified Community Impact Platform" },
+  heroDescription: {
+    ar: "اربط بين من يريد المساعدة ومن يحتاجها في رمضان.\nكل عمل خير يُوثّق ويُتحقّق منه.",
+    en: "Connect those who want to help with those who need it this Ramadan.\nEvery good deed is documented and verified.",
+  },
+  offerHelp: { ar: "أريد المساعدة", en: "Offer Help" },
+  requestHelp: { ar: "أحتاج مساعدة", en: "Request Help" },
+  howItWorks: { ar: "كيف يعمل تكافل؟", en: "How does Takafol work?" },
+  featureDirectContact: { ar: "تواصل مباشر", en: "Direct Contact" },
+  featureDirectContactDesc: {
+    ar: "تواصل مع من يحتاج المساعدة في منطقتك مباشرة وبدون وسيط.",
+    en: "Connect directly with those who need help in your area, no middleman.",
+  },
+  featureBlockchain: { ar: "توثيق بالبلوكتشين", en: "Blockchain Verification" },
+  featureBlockchainDesc: {
+    ar: "كل عمل خير يُسجّل ويُوثّق على البلوكتشين لضمان الشفافية.",
+    en: "Every good deed is recorded and verified on blockchain for transparency.",
+  },
+  featureImpact: { ar: "نقاط التأثير", en: "Impact Points" },
+  featureImpactDesc: {
+    ar: "اكسب نقاط مع كل مساعدة تقدمها وتابع تأثيرك في المجتمع.",
+    en: "Earn points with every help you provide and track your community impact.",
+  },
+  ramadanKareem: { ar: "رمضان كريم", en: "Ramadan Kareem" },
+  districtsInJordan: { ar: "15 منطقة في الأردن", en: "15 districts in Jordan" },
+  helpCategories: { ar: "فئات مساعدة", en: "help categories" },
+
+  // ─── Offer Hub ───────────────────────────────────────
+  offerHubTitle: { ar: "أريد المساعدة", en: "I Want to Help" },
+  offerHubSubtitle: {
+    ar: "اختر طريقة المساهمة — عبر منظمة خيرية أو من عندك مباشرة",
+    en: "Choose how to contribute — through a charity or directly from you",
+  },
+  charityPlatforms: { ar: "المنظمات الخيرية", en: "Charity Platforms" },
+  charityPlatformsDesc: {
+    ar: "تبرع بالزكاة أو تطوع مع منظمات خيرية موثقة في الأردن",
+    en: "Donate Zakat or volunteer with verified charities in Jordan",
+  },
+  personalContribution: { ar: "من عندي", en: "From Me" },
+  personalContributionDesc: {
+    ar: "ساهم شخصياً — قدّم طعام، خدمات، مهارات، أو أغراض للمحتاجين",
+    en: "Contribute personally — offer food, services, skills, or items to those in need",
+  },
+  browseOrCreateOffer: { ar: "تصفّح الطلبات أو أنشئ عرضاً", en: "Browse requests or create an offer" },
+  browseRequests: { ar: "تصفح الطلبات", en: "Browse Requests" },
+  browseRequestsDesc: {
+    ar: "شاهد طلبات المساعدة من أشخاص يحتاجون دعمك في مجتمعك",
+    en: "See help requests from people who need your support in your community",
+  },
+  viewAllRequests: { ar: "عرض جميع الطلبات", en: "View all requests" },
+  programs: { ar: "برامج", en: "programs" },
+  zakatDonate: { ar: "تبرع زكاة", en: "Zakat Donation" },
+
+  // ─── Request Hub ─────────────────────────────────────
+  requestHubTitle: { ar: "أحتاج مساعدة", en: "I Need Help" },
+  requestHubSubtitle: {
+    ar: "تصفح عروض المساعدة المتاحة أو أنشئ طلب مساعدة جديد",
+    en: "Browse available help offers or create a new help request",
+  },
+  browseOffers: { ar: "تصفح العروض", en: "Browse Offers" },
+  browseOffersDesc: {
+    ar: "شاهد عروض المساعدة من متطوعين في مجتمعك واطلب مساعدتهم",
+    en: "See help offers from volunteers in your community and request their help",
+  },
+  viewAllOffers: { ar: "عرض جميع العروض", en: "View all offers" },
+  createRequest: { ar: "أنشئ طلب مساعدة", en: "Create Help Request" },
+  createRequestDesc: {
+    ar: "اشرح ما تحتاج من مساعدة وسيتواصل معك من يستطيع المساعدة",
+    en: "Describe what you need and those who can help will reach out",
+  },
+  createNewRequest: { ar: "إنشاء طلب جديد", en: "Create new request" },
+
+  // ─── Post Card / Feed ────────────────────────────────
+  offer: { ar: "عرض", en: "Offer" },
+  request: { ar: "طلب", en: "Request" },
+  posts: { ar: "المنشورات", en: "Posts" },
+  postsSubtitle: { ar: "تصفح عروض وطلبات المساعدة في مجتمعك", en: "Browse help offers and requests in your community" },
+  offers: { ar: "العروض", en: "Offers" },
+  requests: { ar: "الطلبات", en: "Requests" },
+  noPosts: { ar: "لا توجد منشورات", en: "No posts found" },
+  noPostsHint: { ar: "كن أول من يساعد أو يطلب المساعدة!", en: "Be the first to help or request help!" },
+  createPost: { ar: "أنشئ منشوراً", en: "Create a post" },
+  searchPosts: { ar: "ابحث في المنشورات...", en: "Search posts..." },
+  searchRequests: { ar: "ابحث في الطلبات...", en: "Search requests..." },
+  searchOffers: { ar: "ابحث في العروض...", en: "Search offers..." },
+  allCategories: { ar: "كل الفئات", en: "All categories" },
+  allDistricts: { ar: "كل المناطق", en: "All districts" },
+  allLevels: { ar: "كل المستويات", en: "All levels" },
+  category: { ar: "الفئة", en: "Category" },
+  district: { ar: "المنطقة", en: "District" },
+  urgency: { ar: "الأولوية", en: "Priority" },
+  post: { ar: "منشور", en: "post" },
+  postSingular: { ar: "منشور", en: "post" },
+  connection: { ar: "تواصل", en: "connection" },
+  connect: { ar: "تواصل", en: "Connect" },
+
+  // ─── Create Post/Offer/Request ───────────────────────
+  createOffer: { ar: "أنشئ عرضاً", en: "Create Offer" },
+  createOfferTitle: { ar: "أنشئ عرض مساعدة", en: "Create Help Offer" },
+  createOfferSubtitle: {
+    ar: "اشرح ما يمكنك تقديمه — سيظهر عرضك لمن يحتاج مساعدة",
+    en: "Describe what you can offer — your offer will be visible to those in need",
+  },
+  offerHelpLabel: { ar: "عرض مساعدة", en: "Help Offer" },
+  requestHelpLabel: { ar: "طلب مساعدة", en: "Help Request" },
+  toggleOffer: { ar: "أعرض مساعدة", en: "Offer Help" },
+  toggleRequest: { ar: "أطلب مساعدة", en: "Request Help" },
+  descriptionLabel: { ar: "الوصف", en: "Description" },
+  descriptionOfferPlaceholder: {
+    ar: "مثال: أستطيع إصلاح مشاكل السباكة في منطقة تلاع العلي...",
+    en: "E.g.: I can fix plumbing issues in Tla' Al-Ali area...",
+  },
+  descriptionRequestPlaceholder: {
+    ar: "مثال: أحتاج شخص يصلح الدش في مرج الحمام...",
+    en: "E.g.: I need someone to fix the shower in Marj Al-Hamam...",
+  },
+  explainOffer: { ar: "اشرح ما تريد تقديمه *", en: "Describe what you can offer *" },
+  explainRequest: { ar: "اشرح ما تحتاج *", en: "Describe what you need *" },
+  categoryOptional: { ar: "الفئة (اختياري — يتم تحديدها تلقائياً)", en: "Category (optional — auto-detected)" },
+  selectCategory: { ar: "اختر الفئة", en: "Select category" },
+  selectDistrict: { ar: "اختر المنطقة", en: "Select district" },
+  urgencyLevel: { ar: "مستوى الاستعجال", en: "Urgency Level" },
+  priorityLevel: { ar: "مستوى الأولوية", en: "Priority Level" },
+  publishOffer: { ar: "نشر العرض", en: "Publish Offer" },
+  publishRequest: { ar: "نشر الطلب", en: "Publish Request" },
+  charsMin: { ar: "حرف على الأقل", en: "characters minimum" },
+
+  // ─── Urgency ─────────────────────────────────────────
+  urgencyLow: { ar: "منخفض", en: "Low" },
+  urgencyMedium: { ar: "متوسط", en: "Medium" },
+  urgencyHigh: { ar: "مرتفع", en: "High" },
+  urgencyCritical: { ar: "عاجل", en: "Critical" },
+
+  // ─── Post Detail ─────────────────────────────────────
+  postNotFound: { ar: "المنشور غير موجود", en: "Post not found" },
+  backToPosts: { ar: "العودة للمنشورات", en: "Back to posts" },
+  deletePost: { ar: "حذف المنشور", en: "Delete Post" },
+  deleteConfirm: { ar: "هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء.", en: "Are you sure you want to delete this post? This action cannot be undone." },
+
+  // ─── Connections ─────────────────────────────────────
+  myConnections: { ar: "تواصلاتي", en: "My Connections" },
+  connectionsSubtitle: { ar: "تابع حالة تواصلاتك مع الآخرين", en: "Track your connections with others" },
+  noConnections: { ar: "لا توجد تواصلات", en: "No connections" },
+  noConnectionsHint: {
+    ar: "تصفح المنشورات وتواصل مع الآخرين لبدء المساعدة",
+    en: "Browse posts and connect with others to start helping",
+  },
+  browsePosts: { ar: "تصفح المنشورات", en: "Browse Posts" },
+  pending: { ar: "في الانتظار", en: "Pending" },
+  active: { ar: "نشط", en: "Active" },
+  completed: { ar: "مكتمل", en: "Completed" },
+  cancelled: { ar: "ملغي", en: "Cancelled" },
+  disputed: { ar: "متنازع", en: "Disputed" },
+  accepted: { ar: "مقبول", en: "Accepted" },
+  inProgress: { ar: "قيد التنفيذ", en: "In Progress" },
+  youAreGiver: { ar: "أنت المُعطي", en: "You are the giver" },
+  youAreRequester: { ar: "أنت المُستفيد", en: "You are the requester" },
+  theRequester: { ar: "المُستفيد", en: "The requester" },
+  theGiver: { ar: "المُعطي", en: "The giver" },
+
+  // ─── Connection Detail ───────────────────────────────
+  connectionDetail: { ar: "تفاصيل التواصل", en: "Connection Details" },
+  connectionNotFound: { ar: "التواصل غير موجود", en: "Connection not found" },
+  backToConnections: { ar: "العودة للتواصلات", en: "Back to connections" },
+  accept: { ar: "قبول", en: "Accept" },
+  startWork: { ar: "بدء التنفيذ", en: "Start Work" },
+  complete: { ar: "إكمال", en: "Complete" },
+  rate: { ar: "قيّم", en: "Rate" },
+  conversation: { ar: "المحادثة", en: "Conversation" },
+  rateExperience: { ar: "تقييم التجربة", en: "Rate Experience" },
+  rateWith: { ar: "قيّم تجربتك مع", en: "Rate your experience with" },
+  writeReview: { ar: "اكتب تعليقك (اختياري)...", en: "Write a review (optional)..." },
+  submitRating: { ar: "إرسال التقييم", en: "Submit Rating" },
+
+  // ─── Chat ────────────────────────────────────────────
+  startConversation: { ar: "ابدأ المحادثة بإرسال رسالة...", en: "Start the conversation by sending a message..." },
+  typeMessage: { ar: "اكتب رسالتك...", en: "Type your message..." },
+
+  // ─── Dashboard ───────────────────────────────────────
+  dashboardGreeting: { ar: "مرحباً", en: "Welcome" },
+  dashboardSubtitle: { ar: "لوحة التأثير الخاصة بك في رمضان", en: "Your Ramadan Impact Dashboard" },
+  impactScore: { ar: "نقاط التأثير", en: "Impact Score" },
+  tasksCompleted: { ar: "مهام مكتملة", en: "Tasks Completed" },
+  activeConnections: { ar: "تواصلات نشطة", en: "Active Connections" },
+  newMessages: { ar: "رسائل جديدة", en: "New Messages" },
+  recentPosts: { ar: "منشوراتي الأخيرة", en: "My Recent Posts" },
+  viewAll: { ar: "عرض الكل", en: "View All" },
+  noPostsYet: { ar: "لم تنشر أي منشورات بعد", en: "You haven't posted anything yet" },
+  recentConnections: { ar: "تواصلاتي الأخيرة", en: "My Recent Connections" },
+  noConnectionsYet: { ar: "لا توجد تواصلات بعد", en: "No connections yet" },
+
+  // ─── Profile ─────────────────────────────────────────
+  editProfile: { ar: "تعديل الملف الشخصي", en: "Edit Profile" },
+  name: { ar: "الاسم", en: "Name" },
+  phone: { ar: "رقم الهاتف", en: "Phone" },
+  bio: { ar: "نبذة عنك", en: "About You" },
+  bioPlaceholder: { ar: "اكتب نبذة قصيرة عن نفسك...", en: "Write a short bio about yourself..." },
+  rating: { ar: "التقييم", en: "Rating" },
+  joinDate: { ar: "تاريخ الانضمام", en: "Joined" },
+  savedSuccessfully: { ar: "تم حفظ التغييرات بنجاح", en: "Changes saved successfully" },
+  selectYourDistrict: { ar: "اختر منطقتك", en: "Select your district" },
+  notSpecified: { ar: "غير محدد", en: "Not specified" },
+
+  // ─── Charity ─────────────────────────────────────────
+  charityNotFound: { ar: "المنظمة غير موجودة", en: "Charity not found" },
+  zakatDonation: { ar: "تبرع بالزكاة", en: "Zakat Donation" },
+  volunteerPrograms: { ar: "برامج التطوع", en: "Volunteer Programs" },
+  donationSuccess: { ar: "تم التبرع بنجاح!", en: "Donation successful!" },
+  donationThanks: { ar: "شكراً لتبرعك بمبلغ", en: "Thank you for donating" },
+  toCharity: { ar: "لصالح", en: "to" },
+  receiptNumber: { ar: "رقم الإيصال", en: "Receipt #" },
+  donateAgain: { ar: "تبرع مرة أخرى", en: "Donate again" },
+  customAmount: { ar: "مبلغ مخصص (د.أ)", en: "Custom amount (JOD)" },
+  enterAmount: { ar: "أدخل المبلغ", en: "Enter amount" },
+  donate: { ar: "تبرع", en: "Donate" },
+  donations: { ar: "تبرع", en: "donations" },
+  noPrograms: { ar: "لا توجد برامج تطوع متاحة حالياً", en: "No volunteer programs available currently" },
+  volunteer: { ar: "متطوع", en: "volunteer" },
+  of: { ar: "من", en: "of" },
+  applyVolunteer: { ar: "تقدّم للتطوع", en: "Apply to Volunteer" },
+  applied: { ar: "تم التقديم ✓", en: "Applied ✓" },
+  full: { ar: "مكتمل", en: "Full" },
+
+  // ─── Admin ───────────────────────────────────────────
+  adminPanel: { ar: "لوحة الإدارة", en: "Admin Panel" },
+  adminSubtitle: { ar: "إدارة المنصة والمستخدمين", en: "Manage platform and users" },
+  totalUsers: { ar: "المستخدمين", en: "Users" },
+  totalPosts: { ar: "المنشورات", en: "Posts" },
+  totalConnections: { ar: "التواصلات", en: "Connections" },
+  completedLabel: { ar: "مكتمل", en: "Completed" },
+  activeLabel: { ar: "نشط", en: "Active" },
+  banned: { ar: "محظورين", en: "Banned" },
+  userManagement: { ar: "إدارة المستخدمين", en: "User Management" },
+  searchUsers: { ar: "ابحث بالاسم أو البريد...", en: "Search by name or email..." },
+  admin: { ar: "مدير", en: "Admin" },
+  bannedBadge: { ar: "محظور", en: "Banned" },
+  ban: { ar: "حظر", en: "Ban" },
+  unban: { ar: "رفع الحظر", en: "Unban" },
+
+  // ─── Misc ────────────────────────────────────────────
+  requestsCount: { ar: "طلب", en: "request" },
+  offersCount: { ar: "عرض", en: "offer" },
+  helpRequestsFeed: { ar: "طلبات المساعدة", en: "Help Requests" },
+  helpRequestsFeedDesc: { ar: "أشخاص يحتاجون مساعدتك — تصفح وقدّم المساعدة", en: "People who need your help — browse and offer help" },
+  helpOffersFeed: { ar: "عروض المساعدة", en: "Help Offers" },
+  helpOffersFeedDesc: { ar: "عروض مساعدة من متطوعين — اختر ما يناسبك واطلب المساعدة", en: "Help offers from volunteers — choose what suits you and request help" },
+  noRequestsInCategory: { ar: "لا توجد طلبات في هذه الفئة", en: "No requests in this category" },
+  canCreateOffer: { ar: "يمكنك إنشاء عرض مساعدة شخصي ليراه من يحتاج", en: "You can create a personal offer for those in need to see" },
+  noRequestsNow: { ar: "لا توجد طلبات حالياً", en: "No requests currently" },
+  noOffersNow: { ar: "لا توجد عروض حالياً", en: "No offers currently" },
+  personalOfferTitle: { ar: "من عندي", en: "Personal Contribution" },
+  personalOfferSubtitle: { ar: "تصفح طلبات المساعدة أو أنشئ عرضاً شخصياً", en: "Browse help requests or create a personal offer" },
+  requestHelpFormTitle: { ar: "طلب مساعدة", en: "Request Help" },
+  requestHelpFormSubtitle: { ar: "اشرح ما تحتاج — سيظهر طلبك لمن يريد المساعدة", en: "Describe what you need — your request will be visible to helpers" },
+} as const;
+
+export type TranslationKey = keyof typeof translations;
+
+export function t(key: TranslationKey, lang: Lang): string {
+  return translations[key][lang];
+}
