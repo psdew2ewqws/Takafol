@@ -80,6 +80,21 @@ export const translations = {
   programs: { ar: "برامج", en: "programs" },
   zakatDonate: { ar: "تبرع زكاة", en: "Zakat Donation" },
 
+  // ─── Nahno Volunteer Opportunities ─────────────────
+  nahnoTitle: { ar: "فرص تطوع من نَحْنُ", en: "Volunteer Opportunities from Nahno" },
+  nahnoSubtitle: {
+    ar: "فرص تطوع حقيقية ومحدّثة من منصة نَحْنُ الوطنية",
+    en: "Live volunteer opportunities from the national Nahno platform",
+  },
+  nahnoApplicants: { ar: "متطوع", en: "volunteers" },
+  nahnoOf: { ar: "من", en: "of" },
+  nahnoViewOnNahno: { ar: "التطوع عبر نَحْنُ", en: "Volunteer on Nahno" },
+  nahnoOrg: { ar: "المنظمة", en: "Organization" },
+  nahnoLoading: { ar: "جاري تحميل فرص التطوع...", en: "Loading volunteer opportunities..." },
+  nahnoNoOpportunities: { ar: "لا توجد فرص تطوع حالياً", en: "No volunteer opportunities at the moment" },
+  nahnoLive: { ar: "مباشر", en: "LIVE" },
+  nahnoOnline: { ar: "عن بُعد", en: "Online" },
+
   // ─── Request Hub ─────────────────────────────────────
   requestHubTitle: { ar: "أحتاج مساعدة", en: "I Need Help" },
   requestHubSubtitle: {
