@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { logProof, logCompletion } from '@/lib/blockchain';
+import { grantPoints } from '@/lib/gamification';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -76,6 +77,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         });
       }
     }
+
+    // Gamification: award points for proof upload
+    grantPoints(volunteerId, "COMPLETE_TASK_WITH_PROOF", JSON.stringify({ taskId: id }))
+      .catch((err) => console.error("Gamification error:", err));
 
     return NextResponse.json(updated);
   } catch (error) {

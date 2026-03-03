@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { logConnection } from "@/lib/blockchain";
+import { tryAutoCompleteChallenge } from "@/lib/challenge-auto-complete";
+import { grantPoints } from "@/lib/gamification";
 import type { ApiResponse, ConnectionWithRelations, CreateConnectionInput } from "@/types";
 
 const CONNECTION_SELECT = {
@@ -21,6 +23,8 @@ const CONNECTION_SELECT = {
   giverPoints: true,
   requesterPoints: true,
   blockchainTx: true,
+  completionTx: true,
+  ratingTx: true,
   blockchainVerified: true,
   createdAt: true,
   updatedAt: true,
@@ -143,6 +147,13 @@ export async function POST(request: NextRequest) {
       postId: body.postId,
       userId: session.user.id,
     });
+
+    // Auto-complete daily challenge
+    tryAutoCompleteChallenge(session.user.id, "ACCEPT_CONNECTION", connection.id);
+
+    // Gamification: award points for accepting connection
+    grantPoints(session.user.id, "ACCEPT_CONNECTION", JSON.stringify({ connectionId: connection.id }))
+      .catch((err) => logger.error("Gamification error", "ConnectionsAPI", { error: String(err) }));
 
     // Log to blockchain (non-blocking)
     logConnection(connection.id, body.postId, "n/a", giverId, requesterId)

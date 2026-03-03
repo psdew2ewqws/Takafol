@@ -7,6 +7,7 @@ import { UserMenu } from "@/components/auth/user-menu";
 import { useLanguage } from "@/components/providers/language-provider";
 import { Heart, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GamificationPill } from "@/components/home/inline-achievements";
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -23,8 +24,9 @@ export function Navbar() {
           <span className="text-xl font-bold text-emerald-800">{t("appName")}</span>
         </Link>
 
-        {/* Language Toggle + Auth */}
+        {/* Gamification + Language Toggle + Auth */}
         <div className="flex items-center gap-2">
+          {session && <GamificationPill />}
           <Button
             variant="outline"
             size="sm"

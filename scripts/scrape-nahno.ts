@@ -3,6 +3,8 @@
  * Scrapes volunteer opportunities from multiple Jordanian platforms:
  * 1. nahno.org/volunteer - National volunteer platform (نَحْنُ)
  * 2. tua.jo - Tkiyet Um Ali volunteer programs
+ * 3. volunteerworld.com - International volunteer programs in Jordan
+ * 4. goabroad.com - Volunteer abroad programs in Jordan
  *
  * Saves results to data/nahno-volunteers.json
  * Run: npx tsx scripts/scrape-nahno.ts
@@ -29,7 +31,7 @@ interface NahnoOpportunity {
   orgUrl: string;
   orgLogo: string;
   progressPercent: number;
-  source: "nahno" | "tua";
+  source: "nahno" | "tua" | "volunteerworld" | "goabroad";
   scrapedAt: string;
 }
 
@@ -37,7 +39,7 @@ interface ScrapeResult {
   opportunities: NahnoOpportunity[];
   scrapedAt: string;
   totalCount: number;
-  sources: { nahno: number; tua: number };
+  sources: { nahno: number; tua: number; volunteerworld: number; goabroad: number };
 }
 
 // ─── Nahno Scraper ────────────────────────────────────
@@ -214,6 +216,164 @@ async function scrapeTUA(browser: Browser): Promise<NahnoOpportunity[]> {
   }
 }
 
+// ─── Volunteer World Scraper ─────────────────────────
+
+async function scrapeVolunteerWorld(browser: Browser): Promise<NahnoOpportunity[]> {
+  console.log("[vworld] Scraping volunteerworld.com...");
+  const page = await browser.newPage();
+
+  try {
+    await page.goto("https://www.volunteerworld.com/en/volunteer-abroad/jordan", {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+
+    await page.waitForSelector("article", { timeout: 15000 });
+
+    const programs = await page.evaluate(() => {
+      const results: Array<{
+        title: string; description: string; url: string;
+        price: string; duration: string; location: string; orgName: string;
+        image: string;
+      }> = [];
+
+      document.querySelectorAll("article").forEach((article) => {
+        const titleEl = article.querySelector("h3");
+        const linkEl = article.querySelector('a[href*="volunteer-program"]') as HTMLAnchorElement | null;
+        const descEl = article.querySelector("p");
+        const imgEl = article.querySelector("img") as HTMLImageElement | null;
+
+        if (!titleEl || !linkEl) return;
+
+        // Get price and duration from text content
+        const textContent = article.textContent || "";
+        const priceMatch = textContent.match(/\$(\d+)/);
+        const durationMatch = textContent.match(/(\d+)\s*‑\s*(\d+)\s*weeks/);
+
+        results.push({
+          title: titleEl.textContent?.trim() || "",
+          description: descEl?.textContent?.trim() || "",
+          url: linkEl.href,
+          price: priceMatch ? `$${priceMatch[1]}/week` : "",
+          duration: durationMatch ? `${durationMatch[1]}-${durationMatch[2]} weeks` : "",
+          location: "Amman, Jordan",
+          orgName: "",
+          image: imgEl?.src || "",
+        });
+      });
+
+      // Extract org names
+      results.forEach((r) => {
+        const orgMatch = document.querySelector(`a[href="${new URL(r.url).pathname}"]`)?.closest("article")?.querySelector('a[href*="volunteer-program"] + div a, img[alt*="Voluntourism"], img[alt*="IVHQ"]');
+        if (orgMatch) r.orgName = (orgMatch as HTMLElement).textContent?.trim() || (orgMatch as HTMLImageElement).alt || "";
+      });
+
+      return results;
+    });
+
+    console.log(`[vworld] Found ${programs.length} programs from volunteerworld.com`);
+
+    return programs.map((p, i) => ({
+      id: `vw-${i + 1}`,
+      title: p.title,
+      url: p.url,
+      image: p.image,
+      subcategory: p.price || "Volunteer World",
+      description: p.description,
+      applicantsCurrent: 0,
+      applicantsMax: 0,
+      applicantsText: p.duration,
+      location: p.location,
+      orgName: p.orgName || "Volunteer World",
+      orgUrl: "https://www.volunteerworld.com",
+      orgLogo: "",
+      progressPercent: 0,
+      source: "volunteerworld" as const,
+      scrapedAt: "",
+    }));
+  } catch (err) {
+    console.error("[vworld] Failed to scrape volunteerworld.com:", err);
+    return [];
+  } finally {
+    await page.close();
+  }
+}
+
+// ─── GoAbroad Scraper ────────────────────────────────
+
+async function scrapeGoAbroad(browser: Browser): Promise<NahnoOpportunity[]> {
+  console.log("[goabroad] Scraping goabroad.com...");
+  const page = await browser.newPage();
+
+  try {
+    await page.goto("https://www.goabroad.com/volunteer-abroad/search/jordan/volunteer-abroad-1", {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+
+    await page.waitForSelector("h3, .program-card, .listing", { timeout: 15000 });
+
+    const programs = await page.evaluate(() => {
+      const results: Array<{
+        title: string; description: string; url: string;
+        orgName: string; location: string; image: string;
+      }> = [];
+
+      // GoAbroad uses program cards
+      const cards = document.querySelectorAll('.program-card, .listing-card, article, [class*="program"]');
+      cards.forEach((card) => {
+        const titleEl = card.querySelector("h3, h2, [class*='title']");
+        const linkEl = card.querySelector("a[href*='program'], a[href*='volunteer']") as HTMLAnchorElement | null;
+        const descEl = card.querySelector("p, [class*='description'], [class*='snippet']");
+        const orgEl = card.querySelector("[class*='provider'], [class*='org'], [class*='company']");
+        const imgEl = card.querySelector("img") as HTMLImageElement | null;
+
+        if (!titleEl) return;
+
+        const title = titleEl.textContent?.trim() || "";
+        if (!title || title.length < 5) return;
+
+        results.push({
+          title,
+          description: descEl?.textContent?.trim() || "",
+          url: linkEl?.href || "",
+          orgName: orgEl?.textContent?.trim() || "",
+          location: "Jordan",
+          image: imgEl?.src || "",
+        });
+      });
+
+      return results;
+    });
+
+    console.log(`[goabroad] Found ${programs.length} programs from goabroad.com`);
+
+    return programs.map((p, i) => ({
+      id: `ga-${i + 1}`,
+      title: p.title,
+      url: p.url.startsWith("http") ? p.url : `https://www.goabroad.com${p.url}`,
+      image: p.image,
+      subcategory: "GoAbroad",
+      description: p.description,
+      applicantsCurrent: 0,
+      applicantsMax: 0,
+      applicantsText: "",
+      location: p.location,
+      orgName: p.orgName || "GoAbroad",
+      orgUrl: "https://www.goabroad.com",
+      orgLogo: "",
+      progressPercent: 0,
+      source: "goabroad" as const,
+      scrapedAt: "",
+    }));
+  } catch (err) {
+    console.error("[goabroad] Failed to scrape goabroad.com:", err);
+    return [];
+  } finally {
+    await page.close();
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────
 
 async function main() {
@@ -225,14 +385,16 @@ async function main() {
   });
 
   try {
-    // Scrape both sources in parallel
-    const [nahnoData, tuaData] = await Promise.all([
+    // Scrape ALL sources in parallel
+    const [nahnoData, tuaData, vwData, gaData] = await Promise.all([
       scrapeNahno(browser),
       scrapeTUA(browser),
+      scrapeVolunteerWorld(browser),
+      scrapeGoAbroad(browser),
     ]);
 
     const now = new Date().toISOString();
-    const allOpportunities = [...nahnoData, ...tuaData].map((o) => ({
+    const allOpportunities = [...nahnoData, ...tuaData, ...vwData, ...gaData].map((o) => ({
       ...o,
       scrapedAt: now,
     }));
@@ -244,6 +406,8 @@ async function main() {
       sources: {
         nahno: nahnoData.length,
         tua: tuaData.length,
+        volunteerworld: vwData.length,
+        goabroad: gaData.length,
       },
     };
 
@@ -259,6 +423,8 @@ async function main() {
     console.log(`[scraper] Total: ${result.totalCount} opportunities`);
     console.log(`[scraper]   nahno.org: ${result.sources.nahno}`);
     console.log(`[scraper]   tua.jo: ${result.sources.tua}`);
+    console.log(`[scraper]   volunteerworld.com: ${result.sources.volunteerworld}`);
+    console.log(`[scraper]   goabroad.com: ${result.sources.goabroad}`);
     console.log(`[scraper] Saved to ${outPath}`);
   } finally {
     await browser.close();

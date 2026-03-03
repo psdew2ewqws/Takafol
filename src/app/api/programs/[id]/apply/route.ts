@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { tryAutoCompleteChallenge } from "@/lib/challenge-auto-complete";
+import { grantPoints } from "@/lib/gamification";
 import type { ApiResponse } from "@/types";
 
 /**
  * POST /api/programs/:id/apply
  * Apply to a volunteer program. Creates a VolunteerApplication record.
+ * Accepts: { fullName, phone, note }
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -20,6 +23,19 @@ export async function POST(
   }
 
   const { id } = await params;
+
+  // Parse form data from request body
+  let fullName: string | undefined;
+  let phone: string | undefined;
+  let note: string | undefined;
+  try {
+    const body = await request.json();
+    fullName = body.fullName?.trim() || undefined;
+    phone = body.phone?.trim() || undefined;
+    note = body.note?.trim() || undefined;
+  } catch {
+    // Empty body is fine — fields are optional
+  }
 
   // Check program exists and is active
   const program = await prisma.volunteerProgram.findUnique({
@@ -66,6 +82,9 @@ export async function POST(
         userId: session.user.id,
         programId: id,
         status: "PENDING",
+        fullName,
+        phone,
+        note,
       },
     }),
     prisma.volunteerProgram.update({
@@ -73,6 +92,13 @@ export async function POST(
       data: { enrolled: { increment: 1 } },
     }),
   ]);
+
+  // Auto-complete daily challenge
+  tryAutoCompleteChallenge(session.user.id, "APPLY_PROGRAM", application.id);
+
+  // Gamification: award points for charity program application
+  grantPoints(session.user.id, "APPLY_CHARITY_PROGRAM", JSON.stringify({ programId: id }))
+    .catch((err) => console.error("Gamification error:", err));
 
   return NextResponse.json<ApiResponse<typeof application>>({
     data: application,

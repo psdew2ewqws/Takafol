@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, SlidersHorizontal, Loader2, Plus, Sparkles, Heart, BadgeCheck, Users, DollarSign, Calendar, Copy, Check, CreditCard, Building2, MapPin, ExternalLink, Radio, HandHeart } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2, Plus, Sparkles, Heart, BadgeCheck, Users, DollarSign, Calendar, Copy, Check, CreditCard, Building2, MapPin, ExternalLink, Radio, HandHeart, ImagePlus, Upload } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,12 @@ import { Progress } from "@/components/ui/progress";
 import { PostCard } from "@/components/posts/post-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/components/providers/language-provider";
+
+function SafeImg({ src, alt, className, fallback }: { src: string; alt: string; className?: string; fallback?: React.ReactNode }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return <>{fallback || null}</>;
+  return <img src={src} alt={alt} className={className} onError={() => setBroken(true)} />;
+}
 import { cn } from "@/lib/utils";
 import type { PostWithRelations, Category, District, UrgencyLevel } from "@/types";
 
@@ -41,12 +47,29 @@ interface NahnoOpportunity {
   source?: "nahno" | "tua";
 }
 
+// ── Charity Program Interface ──
+interface CharityProgram {
+  id: string;
+  title: string;
+  titleAr: string;
+  description: string | null;
+  descriptionAr: string | null;
+  capacity: number;
+  enrolled: number;
+  charity: {
+    id: string;
+    name: string;
+    nameAr: string;
+    logoUrl: string | null;
+  };
+}
+
 const SOURCE_STYLES = {
   nahno: { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200", label: "نَحْنُ" },
   tua: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200", label: "تكية أم علي" },
 } as const;
 
-// ── Browse Offers (for request flow) ──
+// ── Browse Offers (for request flow) — ONLY user offers, NO Nahno/charity programs ──
 export function InlineBrowseOffers() {
   const { lang, t } = useLanguage();
   const [posts, setPosts] = useState<PostWithRelations[]>([]);
@@ -60,10 +83,6 @@ export function InlineBrowseOffers() {
   const [urgency, setUrgency] = useState(ALL_VALUE);
   const [search, setSearch] = useState("");
 
-  // Nahno opportunities
-  const [nahnoOpportunities, setNahnoOpportunities] = useState<NahnoOpportunity[]>([]);
-  const [nahnoLoading, setNahnoLoading] = useState(true);
-
   useEffect(() => {
     Promise.all([fetch("/api/categories"), fetch("/api/districts")])
       .then(([catRes, distRes]) => Promise.all([catRes.json(), distRes.json()]))
@@ -71,18 +90,6 @@ export function InlineBrowseOffers() {
         if (catData.data) setCategories(catData.data);
         if (distData.data) setDistricts(distData.data);
       });
-  }, []);
-
-  // Fetch Nahno opportunities
-  useEffect(() => {
-    async function fetchNahno() {
-      try {
-        const res = await fetch("/api/nahno");
-        const data = await res.json();
-        if (data.data) setNahnoOpportunities(data.data);
-      } finally { setNahnoLoading(false); }
-    }
-    fetchNahno();
   }, []);
 
   const fetchPosts = useCallback(async () => {
@@ -100,15 +107,6 @@ export function InlineBrowseOffers() {
   }, [categoryId, districtId, urgency, search]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
-
-  // Filter nahno opportunities by search
-  const filteredNahno = search.trim()
-    ? nahnoOpportunities.filter((o) =>
-        o.title.toLowerCase().includes(search.toLowerCase()) ||
-        o.orgName.toLowerCase().includes(search.toLowerCase()) ||
-        o.description.toLowerCase().includes(search.toLowerCase())
-      )
-    : nahnoOpportunities;
 
   return (
     <div className="space-y-5">
@@ -153,138 +151,14 @@ export function InlineBrowseOffers() {
           </Select>
         </div>
       )}
-
-      {/* Nahno Live Opportunities */}
-      {!nahnoLoading && filteredNahno.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t("nahnoTitle")}</p>
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">
-              <Radio size={8} className="animate-pulse" />
-              {t("nahnoLive")}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {filteredNahno.map((opp) => {
-              const isFull = opp.applicantsMax > 0 && opp.applicantsCurrent >= opp.applicantsMax;
-              const fillPercent = opp.applicantsMax > 0
-                ? Math.min(100, Math.round((opp.applicantsCurrent / opp.applicantsMax) * 100))
-                : 0;
-              const hasProgress = opp.applicantsMax > 0;
-              const src = opp.source ? SOURCE_STYLES[opp.source] : null;
-
-              return (
-                <a
-                  key={`${opp.source || "x"}-${opp.id}`}
-                  href={opp.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <Card className={cn(
-                    "border-gray-200 transition-all hover:shadow-md hover:border-emerald-200",
-                    isFull && "opacity-60"
-                  )}>
-                    <CardContent className="p-3">
-                      <div className="flex gap-3">
-                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                          {opp.image ? (
-                            <img src={opp.image} alt={opp.title} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center">
-                              <HandHeart size={24} className="text-gray-300" />
-                            </div>
-                          )}
-                          {src && (
-                            <span className={cn("absolute bottom-1 left-1 rounded px-1 py-0.5 text-[8px] font-bold", src.bg, src.text)}>
-                              {src.label}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-1">
-                            <h3 className="text-sm font-bold text-gray-900 leading-tight line-clamp-2">{opp.title}</h3>
-                            <ExternalLink size={12} className="shrink-0 mt-0.5 text-gray-300" />
-                          </div>
-
-                          {opp.subcategory && (
-                            <Badge variant="outline" className={cn(
-                              "mt-1 text-[10px] px-1.5 py-0",
-                              src ? `${src.border} ${src.text}` : "border-blue-200 text-blue-600"
-                            )}>
-                              {opp.subcategory}
-                            </Badge>
-                          )}
-
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            {opp.orgLogo ? (
-                              <img src={opp.orgLogo} alt={opp.orgName} className="h-4 w-4 rounded-full object-cover" />
-                            ) : (
-                              <div className="h-4 w-4 rounded-full bg-gray-200" />
-                            )}
-                            <span className="text-[11px] text-gray-500 truncate">{opp.orgName}</span>
-                          </div>
-
-                          <div className="mt-1.5 flex items-center gap-2">
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-400">
-                              <MapPin size={9} />
-                              {opp.location || t("nahnoOnline")}
-                            </span>
-                            {hasProgress && (
-                              <div className="flex-1 flex items-center gap-1.5">
-                                <Progress value={fillPercent} className="h-1.5 flex-1" />
-                                <span className={cn(
-                                  "text-[10px] font-medium whitespace-nowrap",
-                                  isFull ? "text-red-500" : "text-emerald-600"
-                                )}>
-                                  {opp.applicantsCurrent}/{opp.applicantsMax}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </a>
-              );
-            })}
-          </div>
-          <a
-            href="https://www.nahno.org/volunteer/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/50 p-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50"
-          >
-            <ExternalLink size={14} />
-            {t("nahnoViewOnNahno")}
-          </a>
-        </div>
+      <p className="text-sm text-gray-400">{total} {t("offersCount")}</p>
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div>
+      ) : posts.length === 0 ? (
+        <div className="py-10 text-center"><p className="text-base text-gray-400">{t("noOffersNow")}</p></div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} />)}</div>
       )}
-
-      {nahnoLoading && (
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={`nahno-${i}`} className="h-24 rounded-xl" />)}
-        </div>
-      )}
-
-      {/* Takafol User Offers */}
-      <div className="space-y-3">
-        {(total > 0 || filteredNahno.length > 0) && (
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-            {lang === "ar" ? "عروض من مستخدمي تكافل" : "Offers from Takafol Users"}
-          </p>
-        )}
-        <p className="text-sm text-gray-400">{total} {t("offersCount")}</p>
-        {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div>
-        ) : posts.length === 0 ? (
-          <div className="py-10 text-center"><p className="text-base text-gray-400">{t("noOffersNow")}</p></div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} />)}</div>
-        )}
-      </div>
     </div>
   );
 }
@@ -460,7 +334,7 @@ export function InlinePersonalOffer({ onCreateOffer }: { onCreateOffer?: () => v
   );
 }
 
-// ── Browse Requests (offer flow) ──
+// ── Browse Requests (offer flow) — includes Nahno opportunities & charity programs ──
 export function InlineBrowseRequests() {
   const { lang, t } = useLanguage();
   const [posts, setPosts] = useState<PostWithRelations[]>([]);
@@ -474,6 +348,14 @@ export function InlineBrowseRequests() {
   const [urgency, setUrgency] = useState(ALL_VALUE);
   const [search, setSearch] = useState("");
 
+  // Nahno opportunities (orgs requesting volunteers)
+  const [nahnoOpportunities, setNahnoOpportunities] = useState<NahnoOpportunity[]>([]);
+  const [nahnoLoading, setNahnoLoading] = useState(true);
+
+  // Charity programs
+  const [charityPrograms, setCharityPrograms] = useState<CharityProgram[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(true);
+
   useEffect(() => {
     Promise.all([fetch("/api/categories"), fetch("/api/districts")])
       .then(([catRes, distRes]) => Promise.all([catRes.json(), distRes.json()]))
@@ -481,6 +363,30 @@ export function InlineBrowseRequests() {
         if (catData.data) setCategories(catData.data);
         if (distData.data) setDistricts(distData.data);
       });
+  }, []);
+
+  // Fetch Nahno opportunities
+  useEffect(() => {
+    async function fetchNahno() {
+      try {
+        const res = await fetch("/api/nahno");
+        const data = await res.json();
+        if (data.data) setNahnoOpportunities(data.data);
+      } finally { setNahnoLoading(false); }
+    }
+    fetchNahno();
+  }, []);
+
+  // Fetch charity programs
+  useEffect(() => {
+    async function fetchPrograms() {
+      try {
+        const res = await fetch("/api/programs");
+        const data = await res.json();
+        if (data.data) setCharityPrograms(data.data);
+      } finally { setProgramsLoading(false); }
+    }
+    fetchPrograms();
   }, []);
 
   const fetchPosts = useCallback(async () => {
@@ -498,6 +404,27 @@ export function InlineBrowseRequests() {
   }, [categoryId, districtId, urgency, search]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
+
+  // Filter nahno opportunities by search
+  const filteredNahno = search.trim()
+    ? nahnoOpportunities.filter((o) =>
+        o.title.toLowerCase().includes(search.toLowerCase()) ||
+        o.orgName.toLowerCase().includes(search.toLowerCase()) ||
+        o.description.toLowerCase().includes(search.toLowerCase())
+      )
+    : nahnoOpportunities;
+
+  // Filter charity programs by search
+  const filteredPrograms = search.trim()
+    ? charityPrograms.filter((p) =>
+        p.title.toLowerCase().includes(search.toLowerCase()) ||
+        p.titleAr.includes(search) ||
+        p.charity.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.charity.nameAr.includes(search) ||
+        (p.description || "").toLowerCase().includes(search.toLowerCase()) ||
+        (p.descriptionAr || "").includes(search)
+      )
+    : charityPrograms;
 
   return (
     <div className="space-y-5">
@@ -542,14 +469,198 @@ export function InlineBrowseRequests() {
           </Select>
         </div>
       )}
-      <p className="text-sm text-gray-400">{total} {t("requestsCount")}</p>
+
+      {/* Takafol User Requests — hidden when empty */}
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div>
-      ) : posts.length === 0 ? (
-        <div className="py-14 text-center"><p className="text-base text-gray-400">{t("noRequestsNow")}</p></div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} />)}</div>
+        <div className="space-y-3">
+          <div className="grid gap-4 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div>
+        </div>
+      ) : posts.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            {lang === "ar" ? "طلبات من مستخدمي تكافل" : "Requests from Takafol Users"}
+          </p>
+          <p className="text-sm text-gray-400">{total} {t("requestsCount")}</p>
+          <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} />)}</div>
+        </div>
       )}
+
+      {/* Nahno Live Opportunities — orgs requesting volunteers */}
+      {!nahnoLoading && filteredNahno.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t("nahnoTitle")}</p>
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">
+              <Radio size={8} className="animate-pulse" />
+              {t("nahnoLive")}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {filteredNahno.map((opp) => {
+              const isFull = opp.applicantsMax > 0 && opp.applicantsCurrent >= opp.applicantsMax;
+              const fillPercent = opp.applicantsMax > 0
+                ? Math.min(100, Math.round((opp.applicantsCurrent / opp.applicantsMax) * 100))
+                : 0;
+              const hasProgress = opp.applicantsMax > 0;
+              const src = opp.source ? SOURCE_STYLES[opp.source] : null;
+
+              return (
+                <a
+                  key={`${opp.source || "x"}-${opp.id}`}
+                  href={opp.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Card className={cn(
+                    "border-gray-200 transition-all hover:shadow-md hover:border-emerald-200",
+                    isFull && "opacity-60"
+                  )}>
+                    <CardContent className="p-3">
+                      <div className="flex gap-3">
+                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                          {opp.image ? (
+                            <SafeImg src={opp.image} alt={opp.title} className="h-full w-full object-cover" fallback={<div className="flex h-full w-full items-center justify-center"><HandHeart size={24} className="text-gray-300" /></div>} />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <HandHeart size={24} className="text-gray-300" />
+                            </div>
+                          )}
+                          {src && (
+                            <span className={cn("absolute bottom-1 left-1 rounded px-1 py-0.5 text-[8px] font-bold", src.bg, src.text)}>
+                              {src.label}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-1">
+                            <h3 className="text-sm font-bold text-gray-900 leading-tight line-clamp-2">{opp.title}</h3>
+                            <ExternalLink size={12} className="shrink-0 mt-0.5 text-gray-300" />
+                          </div>
+
+                          {opp.subcategory && (
+                            <Badge variant="outline" className={cn(
+                              "mt-1 text-[10px] px-1.5 py-0",
+                              src ? `${src.border} ${src.text}` : "border-blue-200 text-blue-600"
+                            )}>
+                              {opp.subcategory}
+                            </Badge>
+                          )}
+
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            {opp.orgLogo ? (
+                              <SafeImg src={opp.orgLogo} alt={opp.orgName} className="h-4 w-4 rounded-full object-cover" fallback={<div className="h-4 w-4 rounded-full bg-gray-200" />} />
+                            ) : (
+                              <div className="h-4 w-4 rounded-full bg-gray-200" />
+                            )}
+                            <span className="text-[11px] text-gray-500 truncate">{opp.orgName}</span>
+                          </div>
+
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-400">
+                              <MapPin size={9} />
+                              {opp.location || t("nahnoOnline")}
+                            </span>
+                            {hasProgress && (
+                              <div className="flex-1 flex items-center gap-1.5">
+                                <Progress value={fillPercent} className="h-1.5 flex-1" />
+                                <span className={cn(
+                                  "text-[10px] font-medium whitespace-nowrap",
+                                  isFull ? "text-red-500" : "text-emerald-600"
+                                )}>
+                                  {opp.applicantsCurrent}/{opp.applicantsMax}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+              );
+            })}
+          </div>
+          <a
+            href="https://www.nahno.org/volunteer/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/50 p-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50"
+          >
+            <ExternalLink size={14} />
+            {t("nahnoViewOnNahno")}
+          </a>
+        </div>
+      )}
+
+      {nahnoLoading && (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={`nahno-${i}`} className="h-24 rounded-xl" />)}
+        </div>
+      )}
+
+      {/* Charity Volunteer Programs */}
+      {!programsLoading && filteredPrograms.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t("charityPrograms")}</p>
+            <Badge variant="outline" className="border-emerald-200 text-emerald-700 text-[10px] px-1.5 py-0">
+              <Building2 size={8} className="mr-0.5" />
+              {filteredPrograms.length}
+            </Badge>
+          </div>
+          <div className="space-y-2">
+            {filteredPrograms.map((prog) => {
+              const spotsLeft = Math.max(0, prog.capacity - prog.enrolled);
+              const fillPercent = prog.capacity > 0 ? Math.min(100, Math.round((prog.enrolled / prog.capacity) * 100)) : 0;
+              const isFull = prog.capacity > 0 && spotsLeft === 0;
+              return (
+                <a key={prog.id} href={`/offer/charities/${prog.charity.id}`} className="block">
+                  <Card className={cn("border-gray-200 transition-all hover:shadow-md hover:border-emerald-200", isFull && "opacity-60")}>
+                    <CardContent className="p-3">
+                      <div className="flex gap-3">
+                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
+                          {prog.charity.logoUrl ? (
+                            <SafeImg src={prog.charity.logoUrl} alt={prog.charity.name} className="h-full w-full object-cover" fallback={<Building2 size={20} className="text-gray-300" />} />
+                          ) : (
+                            <Building2 size={20} className="text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-bold text-gray-900 leading-tight line-clamp-2">
+                            {lang === "ar" ? prog.titleAr : prog.title}
+                          </h3>
+                          <span className="text-[11px] text-gray-500 truncate block mt-0.5">
+                            {lang === "ar" ? prog.charity.nameAr : prog.charity.name}
+                          </span>
+                          {prog.capacity > 0 && (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <Progress value={fillPercent} className="h-1.5 flex-1" />
+                              <span className={cn("text-[10px] font-medium whitespace-nowrap", isFull ? "text-red-500" : "text-emerald-600")}>
+                                {isFull
+                                  ? (lang === "ar" ? "مكتمل" : "Full")
+                                  : `${spotsLeft} ${t("spotsLeft")}`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {programsLoading && (
+        <div className="space-y-2">
+          {Array.from({ length: 2 }).map((_, i) => <Skeleton key={`prog-${i}`} className="h-20 rounded-xl" />)}
+        </div>
+      )}
+
     </div>
   );
 }
@@ -788,6 +899,9 @@ export function InlineCharityDetail({ charityId }: InlineCharityDetailProps) {
   const [donationAmount, setDonationAmount] = useState("");
   const [donating, setDonating] = useState(false);
   const [donated, setDonated] = useState(false);
+  const [donationStep, setDonationStep] = useState<"amount" | "payment" | "success">("amount");
+  const [pointsEarned, setPointsEarned] = useState(0);
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
 
   // Volunteering
   const [applyingTo, setApplyingTo] = useState<string | null>(null);
@@ -804,10 +918,40 @@ export function InlineCharityDetail({ charityId }: InlineCharityDetailProps) {
     if (charityId) fetchCharity();
   }, [charityId]);
 
-  async function handleDonate() {
+  function handleShowPayment() {
     if (!donationAmount || Number(donationAmount) <= 0) return;
+    setDonationStep("payment");
+  }
+
+  function handleReceiptSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setReceiptImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleConfirmDonation() {
+    if (!donationAmount || Number(donationAmount) <= 0 || !charity || !receiptImage) return;
     setDonating(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const res = await fetch("/api/donations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ charityId: charity.id, amount: Number(donationAmount), receiptImage }),
+      });
+      const data = await res.json();
+      if (res.ok && data.data) {
+        setPointsEarned(data.data.pointsEarned);
+      } else {
+        setPointsEarned(Math.floor(Number(donationAmount) * 10));
+      }
+    } catch {
+      setPointsEarned(Math.floor(Number(donationAmount) * 10));
+    }
+    setDonationStep("success");
     setDonated(true);
     setDonating(false);
   }
@@ -847,15 +991,13 @@ export function InlineCharityDetail({ charityId }: InlineCharityDetailProps) {
       {/* Charity Header */}
       <Card className="border-emerald-100">
         <CardContent className="flex flex-col items-center p-6 text-center">
-          {charity.logoUrl ? (
-            <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-white border border-gray-100 overflow-hidden">
-              <img src={charity.logoUrl} alt={charityName} className="h-20 w-20 object-contain p-2" />
-            </div>
-          ) : (
-            <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-50">
+          <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-50 border border-gray-100 overflow-hidden">
+            {charity.logoUrl ? (
+              <SafeImg src={charity.logoUrl} alt={charityName} className="h-20 w-20 object-contain p-2" fallback={<Heart className="h-10 w-10 text-emerald-600" />} />
+            ) : (
               <Heart className="h-10 w-10 text-emerald-600" />
-            </div>
-          )}
+            )}
+          </div>
           <div className="mb-1 flex items-center gap-2">
             <h1 className="text-xl font-bold text-emerald-900">{charityName}</h1>
             {charity.isVerified && <BadgeCheck className="h-5 w-5 text-emerald-600" />}
@@ -921,20 +1063,134 @@ export function InlineCharityDetail({ charityId }: InlineCharityDetailProps) {
               <CardTitle className="text-lg text-emerald-900">{t("zakatDonation")}</CardTitle>
             </CardHeader>
             <CardContent>
-              {donated ? (
+              {donationStep === "success" ? (
                 <div className="space-y-4 text-center">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                     <Heart className="h-8 w-8 text-green-600" />
                   </div>
-                  <h3 className="text-lg font-bold text-green-700">{t("donationSuccess")}</h3>
+                  <h3 className="text-lg font-bold text-green-700">{t("donationRecorded")}</h3>
                   <p className="text-sm text-muted-foreground">
                     {t("donationThanks")} {donationAmount} JOD {t("toCharity")} {charityName}
                   </p>
-                  <div className="rounded-lg bg-gray-50 p-3 text-xs text-muted-foreground">
-                    {t("receiptNumber")} TKF-{Date.now().toString(36).toUpperCase()}
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 space-y-1">
+                    <p className="text-2xl font-bold text-emerald-700">+{pointsEarned}</p>
+                    <p className="text-xs font-medium text-emerald-600">{t("pointsEarned")}</p>
                   </div>
-                  <Button variant="outline" onClick={() => { setDonated(false); setDonationAmount(""); }}>
+                  <Button variant="outline" onClick={() => { setDonated(false); setDonationAmount(""); setDonationStep("amount"); setPointsEarned(0); setReceiptImage(null); }}>
                     {t("donateAgain")}
+                  </Button>
+                </div>
+              ) : donationStep === "payment" ? (
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setDonationStep("amount")}
+                    className="text-xs text-emerald-700 hover:underline flex items-center gap-1"
+                  >
+                    ← {t("backToAmount")}
+                  </button>
+
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center space-y-1">
+                    <p className="text-xs text-emerald-600 font-medium">{t("amountToTransfer")}</p>
+                    <p className="text-3xl font-bold text-emerald-800">{donationAmount} JOD</p>
+                    <p className="text-xs text-emerald-500">= {Math.floor(Number(donationAmount) * 10)} {t("pointsEarned")}</p>
+                  </div>
+
+                  <p className="text-sm text-center text-gray-600">{t("transferInstructions")}</p>
+
+                  {charity.cliqAlias || charity.iban ? (
+                    <div className="space-y-3">
+                      {charity.cliqAlias && (
+                        <CopyableField
+                          icon={<CreditCard className="h-4 w-4 text-emerald-600" />}
+                          label={lang === "ar" ? "كليك (CliQ)" : "CliQ Alias"}
+                          value={charity.cliqAlias}
+                        />
+                      )}
+                      {charity.iban && (
+                        <>
+                          {charity.cliqAlias && (
+                            <p className="text-center text-xs text-gray-400">{t("orUseIban")}</p>
+                          )}
+                          <CopyableField
+                            icon={<Building2 className="h-4 w-4 text-blue-600" />}
+                            label={lang === "ar" ? "رقم الحساب (IBAN)" : "IBAN"}
+                            value={charity.iban.replace(/(.{4})/g, "$1 ").trim()}
+                            copyValue={charity.iban}
+                          />
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-center space-y-2">
+                      <p className="text-sm text-amber-700">{t("noPaymentInfo")}</p>
+                      {charity.website && (
+                        <a
+                          href={charity.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:underline"
+                        >
+                          {t("visitWebsite")} ↗
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Receipt upload section */}
+                  <div className="rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/50 p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-emerald-800">
+                      <ImagePlus className="h-4 w-4" />
+                      {t("uploadTransferProof")}
+                    </div>
+                    <p className="text-xs text-gray-500">{t("uploadTransferProofDesc")}</p>
+
+                    {receiptImage ? (
+                      <div className="space-y-2">
+                        <div className="relative rounded-lg overflow-hidden border border-emerald-200">
+                          <img
+                            src={receiptImage}
+                            alt="Transfer receipt"
+                            className="w-full max-h-48 object-contain bg-white"
+                          />
+                        </div>
+                        <label className="flex items-center justify-center gap-2 text-xs text-emerald-700 cursor-pointer hover:underline">
+                          <Upload className="h-3 w-3" />
+                          {t("changeImage")}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleReceiptSelect}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-white p-6 cursor-pointer hover:bg-emerald-50 transition-colors">
+                        <Upload className="h-8 w-8 text-emerald-400" />
+                        <span className="text-sm font-medium text-emerald-700">{t("chooseImage")}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleReceiptSelect}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={handleConfirmDonation}
+                    disabled={donating || !receiptImage}
+                    className="w-full bg-emerald-700 text-white hover:bg-emerald-800 h-12 text-base"
+                  >
+                    {donating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="mx-1 h-4 w-4" />
+                        {t("confirmAndSend")}
+                      </>
+                    )}
                   </Button>
                 </div>
               ) : (
@@ -956,11 +1212,11 @@ export function InlineCharityDetail({ charityId }: InlineCharityDetailProps) {
                     <Input id="inline-amount" type="number" min="1" placeholder={t("enterAmount")} value={donationAmount} onChange={(e) => setDonationAmount(e.target.value)} dir="ltr" />
                   </div>
                   <Button
-                    onClick={handleDonate}
-                    disabled={donating || !donationAmount || Number(donationAmount) <= 0}
+                    onClick={handleShowPayment}
+                    disabled={!donationAmount || Number(donationAmount) <= 0}
                     className="w-full bg-emerald-700 text-white hover:bg-emerald-800"
                   >
-                    {donating ? <Loader2 className="h-4 w-4 animate-spin" /> : `${t("donate")} ${donationAmount ? donationAmount + " JOD" : ""}`}
+                    {`${t("donate")} ${donationAmount ? donationAmount + " JOD" : ""}`}
                   </Button>
                 </div>
               )}
@@ -993,7 +1249,7 @@ export function InlineCharityDetail({ charityId }: InlineCharityDetailProps) {
                       </div>
                       <Button
                         onClick={() => handleApply(program.id)}
-                        disabled={isFull || hasApplied || applyingTo === program.id || !session}
+                        disabled={isFull || hasApplied || applyingTo === program.id}
                         variant={hasApplied ? "outline" : "default"}
                         className={cn("w-full", hasApplied ? "border-green-200 text-green-700" : "bg-emerald-700 text-white hover:bg-emerald-800")}
                       >

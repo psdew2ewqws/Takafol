@@ -1,0 +1,228 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "51",
+        "title": "Setup VAPID Keys and Environment Configuration",
+        "description": "Generate VAPID key pair for web push notifications and configure environment variables",
+        "details": "Use web-push library to generate VAPID keys: `webpush.generateVAPIDKeys()`. Store public key in NEXT_PUBLIC_VAPID_PUBLIC_KEY, private key in VAPID_PRIVATE_KEY, and subject in VAPID_SUBJECT (mailto:admin@takafol.app). Add these to .env.local and production environment. Install web-push dependency: `npm install web-push`.",
+        "testStrategy": "Verify environment variables are loaded correctly, test VAPID key format validation, ensure keys work with web-push library initialization",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:21:46.812Z"
+      },
+      {
+        "id": "52",
+        "title": "Create Database Schema for Push Notifications and Challenges",
+        "description": "Add Prisma models for PushSubscription, NotificationLog, DailyChallenge, and UserChallenge",
+        "details": "Add the four new models to prisma/schema.prisma as specified in the PRD. Include all fields, relations, indexes, and constraints. Add relations to existing User model. Run `prisma db push` to apply schema changes. Update existing User model to include relations to new models if needed.",
+        "testStrategy": "Verify schema compiles without errors, test database migrations, validate all indexes and constraints are created, ensure foreign key relationships work correctly",
+        "priority": "high",
+        "dependencies": [
+          "51"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:23:33.523Z"
+      },
+      {
+        "id": "53",
+        "title": "Implement Service Worker for Push Notification Handling",
+        "description": "Create service worker to handle push events and notification clicks",
+        "details": "Create /public/sw.js with push event listener that displays notifications using self.registration.showNotification(). Handle notificationclick events to open/focus app at specified URL. Include offline caching for notification assets. Register service worker in app layout using navigator.serviceWorker.register('/sw.js').",
+        "testStrategy": "Test service worker registration, verify push events trigger notifications, test notification click navigation, validate offline notification display",
+        "priority": "high",
+        "dependencies": [
+          "51"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:23:33.526Z"
+      },
+      {
+        "id": "54",
+        "title": "Build Push Subscription API Endpoints",
+        "description": "Create API routes for subscribing, unsubscribing, and checking push notification status",
+        "details": "Implement POST /api/notifications/subscribe to save PushSubscription with endpoint, p256dhKey, authKey, userId, userAgent. Add DELETE /api/notifications/subscribe to deactivate subscriptions. Create GET /api/notifications/status to check user subscription status. Handle duplicate subscriptions and validation.",
+        "testStrategy": "Test subscription creation with valid/invalid payloads, verify unsubscribe functionality, test status endpoint for subscribed/unsubscribed users, validate database storage",
+        "priority": "high",
+        "dependencies": [
+          "52",
+          "53"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:26:57.468Z"
+      },
+      {
+        "id": "55",
+        "title": "Create Notification Opt-in Popup Component",
+        "description": "Build the 'Ready for the Challenges?' popup with Ramadan-themed design",
+        "details": "Create NotificationPrompt component with full-screen overlay, Ramadan gold (#D4A843) accents, bilingual text (en/ar). Include 'Join the Challenge!' button that calls Notification.requestPermission() and subscribes via Push API. Add 'Maybe Later' with 24h localStorage cooldown. Skip popup if already subscribed or show browser settings instructions if denied.",
+        "testStrategy": "Test popup appearance on page load, verify permission request flow, test localStorage cooldown functionality, validate subscription after opt-in, test different permission states",
+        "priority": "high",
+        "dependencies": [
+          "54"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:28:56.009Z"
+      },
+      {
+        "id": "56",
+        "title": "Implement Push Notification Sending Service",
+        "description": "Create server-side service to send push notifications to subscribers using web-push",
+        "details": "Create notification service using web-push library with VAPID configuration. Implement batch processing (max 100 subscriptions per batch with 100ms delay). Handle failed subscriptions (410 Gone) by auto-deactivating. Support bilingual notifications with title/body in en/ar. Include payload validation (under 4KB limit).",
+        "testStrategy": "Test notification sending to single/multiple subscribers, verify batch processing limits, test failed subscription handling, validate payload size limits, test bilingual content delivery",
+        "priority": "medium",
+        "dependencies": [
+          "54"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:28:56.013Z"
+      },
+      {
+        "id": "57",
+        "title": "Build Admin Notification Portal UI",
+        "description": "Create admin interface for composing and sending push notifications",
+        "details": "Create /admin/notifications page with notification composer form including bilingual title/body fields, icon URL, link URL, target audience selection, and schedule options. Add notification history table with delivery stats and subscriber statistics dashboard. Use Tailwind CSS 4 with Ramadan gold theme.",
+        "testStrategy": "Test form validation and submission, verify bilingual field switching, test scheduling functionality, validate history display with correct stats, test admin-only access control",
+        "priority": "medium",
+        "dependencies": [
+          "56"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:33:10.196Z"
+      },
+      {
+        "id": "58",
+        "title": "Create Admin Notification API Endpoints",
+        "description": "Implement backend APIs for admin notification management",
+        "details": "Implement POST /api/admin/notifications/send for sending notifications (admin auth required), GET /api/admin/notifications/history for notification logs, and GET /api/admin/notifications/stats for subscriber statistics. Create NotificationLog records for tracking. Integrate with push notification service.",
+        "testStrategy": "Test admin authentication, verify notification sending and logging, test history retrieval with pagination, validate subscriber statistics accuracy, test error handling for failed sends",
+        "priority": "medium",
+        "dependencies": [
+          "56",
+          "57"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:33:10.200Z"
+      },
+      {
+        "id": "59",
+        "title": "Implement Daily Challenge Generation System",
+        "description": "Create system to generate daily challenges with predefined templates",
+        "details": "Create challenge generation service with 9 predefined categories (Help Someone, Ask for Help, Volunteer, etc.) mapped to actionTypes. Implement POST /api/challenges/generate endpoint (admin/CRON triggered) that creates DailyChallenge records. Include challenge rotation logic and point assignment (5-25 points based on difficulty).",
+        "testStrategy": "Test challenge generation for each category, verify unique daily challenges, test point assignment logic, validate challenge data structure, test admin/CRON access control",
+        "priority": "medium",
+        "dependencies": [
+          "52"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:33:10.208Z"
+      },
+      {
+        "id": "60",
+        "title": "Build Daily Challenge API Endpoints",
+        "description": "Create user-facing APIs for challenge interaction and tracking",
+        "details": "Implement GET /api/challenges/today to fetch current challenge and user status, POST /api/challenges/complete for manual completion, GET /api/challenges/history for user challenge history, and GET /api/challenges/streak for streak information. Create UserChallenge records and integrate with existing impactScore.",
+        "testStrategy": "Test today's challenge retrieval, verify challenge completion and point awarding, test history pagination, validate streak calculation, test integration with user impactScore",
+        "priority": "medium",
+        "dependencies": [
+          "59"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:36:18.457Z"
+      },
+      {
+        "id": "61",
+        "title": "Create Daily Challenge UI Components",
+        "description": "Build challenge card and challenge history page components",
+        "details": "Create DailyChallengeCard component for homepage with today's challenge, points, progress, streak counter, and countdown timer (midnight Jordan time UTC+3). Build /challenges page with calendar view, total points, current streak display, and challenge history list. Use Tailwind CSS 4 with Ramadan gold theme and bilingual support.",
+        "testStrategy": "Test challenge card display and interactions, verify countdown timer accuracy, test challenge history page functionality, validate bilingual text switching, test responsive design",
+        "priority": "medium",
+        "dependencies": [
+          "60"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:40:57.427Z"
+      },
+      {
+        "id": "62",
+        "title": "Implement Challenge Auto-Detection Hooks",
+        "description": "Add automatic challenge completion detection to existing API routes",
+        "details": "Add challenge completion hooks to existing API routes: posts (CREATE_OFFER, CREATE_REQUEST), connections (ACCEPT_CONNECTION), volunteer programs (APPLY_PROGRAM), donations (MAKE_DONATION), reviews (LEAVE_REVIEW), sharing (SHARE_PLATFORM), and program browsing (BROWSE_PROGRAMS). Check for matching daily challenge actionType and auto-complete UserChallenge.",
+        "testStrategy": "Test auto-completion for each action type, verify challenge matching logic, test point awarding integration, validate proof tracking (proofType, proofId), test edge cases with multiple completions",
+        "priority": "medium",
+        "dependencies": [
+          "60"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:40:57.430Z"
+      },
+      {
+        "id": "63",
+        "title": "Build Challenge Streak and Bonus System",
+        "description": "Implement streak tracking and bonus point multipliers",
+        "details": "Add streak calculation logic based on consecutive daily challenge completions. Implement bonus multipliers: 3-day (1.5x), 7-day (2x), 14-day (2.5x), 30-day (3x). Update challenge completion to apply streak bonuses. Add streak milestone push notifications. Display streak counter in UI components.",
+        "testStrategy": "Test streak calculation accuracy, verify bonus multiplier application, test streak milestone notifications, validate streak display in UI, test streak reset on missed days",
+        "priority": "medium",
+        "dependencies": [
+          "61",
+          "62"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:47:53.288Z"
+      },
+      {
+        "id": "64",
+        "title": "Integrate Challenge System with Existing User Features",
+        "description": "Connect daily challenges with existing impactScore, leaderboard, and user profile",
+        "details": "Update User model impactScore when challenges are completed. Integrate challenge points with existing leaderboard system. Add challenge statistics to user profile (total challenges completed, current streak, total points from challenges). Ensure challenge points are included in overall impact scoring.",
+        "testStrategy": "Test impactScore updates from challenge completion, verify leaderboard integration, test user profile challenge stats display, validate overall impact score calculation including challenge points",
+        "priority": "medium",
+        "dependencies": [
+          "63"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:47:53.290Z"
+      },
+      {
+        "id": "65",
+        "title": "Implement Daily Challenge Notification Automation",
+        "description": "Set up automated daily challenge notifications and CRON scheduling",
+        "details": "Create CRON job or scheduled function to run daily at midnight Jordan time (UTC+3) that generates new daily challenge and sends push notification to all subscribers. Implement challenge expiration logic for previous day's challenges. Add notification for challenge completion and streak milestones. Handle timezone considerations and daylight saving time.",
+        "testStrategy": "Test CRON job execution timing, verify daily challenge generation automation, test notification delivery to all subscribers, validate timezone handling, test challenge expiration logic",
+        "priority": "low",
+        "dependencies": [
+          "58",
+          "59",
+          "63"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-03-03T10:47:53.292Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-03-03T10:47:53.292Z",
+      "taskCount": 15,
+      "completedCount": 15,
+      "tags": [
+        "master"
+      ]
+    }
+  }
+}

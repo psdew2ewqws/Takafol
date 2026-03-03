@@ -185,27 +185,13 @@
     {
       "externalId": "jhco-prog-1",
       "charityId": "jordan_hashemite",
-      "title": "Food Parcel Packing",
-      "titleAr": "تعبئة الطرود الغذائية",
-      "description": "Pack food parcels for distribution to refugee communities.",
-      "descriptionAr": "تعبئة الطرود الغذائية لتوزيعها على مجتمعات اللاجئين.",
+      "title": "تطوع مع بنك الملابس الخيري",
+      "titleAr": "تطوع مع بنك الملابس الخيري",
+      "description": "",
+      "descriptionAr": "",
       "capacity": 30,
-      "enrolled": 8,
-      "url": "https://www.jhco.org.jo",
-      "image": "",
-      "location": "عمان",
-      "source": "jhco.org.jo"
-    },
-    {
-      "externalId": "jhco-prog-2",
-      "charityId": "jordan_hashemite",
-      "title": "Emergency Relief Distribution",
-      "titleAr": "توزيع مواد الإغاثة الطارئة",
-      "description": "Distribute emergency supplies to families affected by crises.",
-      "descriptionAr": "توزيع مواد الإغاثة الطارئة على العائلات المتضررة من الأزمات.",
-      "capacity": 25,
-      "enrolled": 5,
-      "url": "https://www.jhco.org.jo",
+      "enrolled": 0,
+      "url": "",
       "image": "",
       "location": "عمان",
       "source": "jhco.org.jo"
@@ -309,11 +295,11 @@
       "source": "manual"
     }
   ],
-  "scrapedAt": "2026-03-03T04:11:21.227Z",
-  "totalCount": 22,
+  "scrapedAt": "2026-03-03T11:07:17.327Z",
+  "totalCount": 21,
   "sources": {
     "tua.jo": 13,
-    "jhco.org.jo": 2,
+    "jhco.org.jo": 1,
     "jnrcs.org": 3,
     "kinghusseinfoundation.org": 2,
     "manual": 2

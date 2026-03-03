@@ -1,0 +1,416 @@
+# Product Requirements Document (PRD)
+# Takafol — Push Notification System & Daily Challenges
+
+## 1. Overview
+
+Build a push notification system with a daily challenges engine for the Takafol community impact platform. Users opt-in to browser push notifications via a branded "Ready for the Challenges?" popup. An admin portal enables pushing notifications to all subscribers. An AI-powered daily challenge engine generates one task per day (e.g., "Help someone on Takafol", "Join a Nahnoo volunteer program") and awards impact points upon completion.
+
+Stack: Next.js 16 (App Router), Tailwind CSS 4, Prisma 7, Railway PostgreSQL, web-push (VAPID)
+Theme: Ramadan gold (#D4A843) accents, existing Takafol design system
+Integrates with: existing User model, impactScore, leaderboard, posts, connections, volunteer programs
+
+---
+
+## 2. Goals
+
+1. **Increase daily active engagement** — bring users back every day with a new challenge
+2. **Drive platform actions** — challenges direct users toward core features (offers, requests, volunteering, donations)
+3. **Gamify impact** — points per challenge completed feed into the existing leaderboard
+4. **Enable direct communication** — admin can push announcements, reminders, and challenge notifications to all subscribers
+5. **Full Web Push API compatibility** — standard VAPID-based push, works on Chrome, Firefox, Edge, Safari 16+
+
+---
+
+## 3. Target Users
+
+| Persona | Need |
+|---------|------|
+| Community member | Daily motivation to help others, earn points |
+| Admin | Broadcast announcements and challenge reminders |
+| AI system | Auto-generate daily challenges based on platform data |
+
+---
+
+## 4. Feature Requirements
+
+### 4.1 Push Notification Opt-In Flow
+
+**Trigger:** Every time a user visits the platform (logged in or not), show a branded popup.
+
+**Popup — "Ready for the Challenges?"**
+- Full-screen overlay with Ramadan-themed design (gold accents, mosque silhouette)
+- Title: "Ready for the Challenges?" / "هل أنت مستعد للتحديات؟"
+- Subtitle: "Join daily challenges, earn points, and make a real impact in your community"
+- Two buttons:
+  - **"Join the Challenge!"** — triggers browser `Notification.requestPermission()`, subscribes via Push API, stores subscription in DB
+  - **"Maybe Later"** — dismisses popup, shows again on next visit (with 24h cooldown stored in localStorage)
+- If user already subscribed — skip popup entirely
+- If user previously denied browser permission — show alternative: "Enable notifications in your browser settings" with instructions
+
+**Technical:**
+- Use Web Push API with VAPID keys (server-generated)
+- Service Worker registration for background push handling
+- Store PushSubscription (endpoint, keys.p256dh, keys.auth) in database linked to user
+
+### 4.2 Push Notification Subscription Management
+
+**Database Model — `PushSubscription`**
+```
+- id: String (cuid)
+- userId: String (nullable — allow anonymous subscriptions)
+- endpoint: String (unique)
+- p256dhKey: String
+- authKey: String
+- userAgent: String (optional)
+- isActive: Boolean (default true)
+- createdAt: DateTime
+- updatedAt: DateTime
+```
+
+**API Endpoints:**
+- `POST /api/notifications/subscribe` — save new push subscription
+- `DELETE /api/notifications/subscribe` — unsubscribe (deactivate)
+- `GET /api/notifications/status` — check if current user is subscribed
+
+### 4.3 Admin Notification Portal
+
+**Page:** `/admin/notifications`
+
+**Features:**
+- **Compose & Send** notification form:
+  - Title (en/ar)
+  - Body message (en/ar)
+  - Icon URL (optional, defaults to Takafol logo)
+  - Link URL (where notification click navigates)
+  - Target audience: All subscribers / Specific users
+  - Schedule: Send now / Schedule for later (date+time picker)
+- **Notification History** table:
+  - List of all sent notifications with timestamp, title, recipients count, delivery stats
+- **Subscriber Stats** dashboard:
+  - Total subscribers, active vs inactive, daily subscription trend
+
+**API Endpoints:**
+- `POST /api/admin/notifications/send` — push notification to subscribers (admin only)
+- `GET /api/admin/notifications/history` — list sent notifications (admin only)
+- `GET /api/admin/notifications/stats` — subscriber statistics (admin only)
+
+**Database Model — `NotificationLog`**
+```
+- id: String (cuid)
+- titleEn: String
+- titleAr: String
+- bodyEn: String
+- bodyAr: String
+- iconUrl: String (optional)
+- linkUrl: String (optional)
+- targetType: Enum (ALL, SPECIFIC)
+- recipientCount: Int
+- sentAt: DateTime
+- scheduledFor: DateTime (optional)
+- status: Enum (SENT, SCHEDULED, FAILED)
+- sentById: String (admin user ID)
+```
+
+### 4.4 Daily Challenge System
+
+**Core Concept:** Every day at midnight (Jordan time, UTC+3), the system generates a new daily challenge. All users get a push notification about the new challenge. Users complete it within the platform and earn points.
+
+**Challenge Categories (mapped to existing platform features):**
+1. **Help Someone** — Create an offer post on Takafol (points: 10)
+2. **Ask for Help** — Create a request post (points: 5)
+3. **Volunteer** — Apply to a Nahnoo or charity volunteer program (points: 15)
+4. **Connect** — Accept a pending connection request (points: 10)
+5. **Complete a Task** — Join and submit proof for a community task (points: 20)
+6. **Donate** — Make a Zakat donation to any verified charity (points: 25)
+7. **Rate & Review** — Leave a review on a completed connection (points: 5)
+8. **Spread Kindness** — Share the platform with someone (points: 5)
+9. **Explore** — Browse and interact with 3 different charity programs (points: 5)
+
+**Database Model — `DailyChallenge`**
+```
+- id: String (cuid)
+- date: DateTime (unique, one per day)
+- titleEn: String
+- titleAr: String
+- descriptionEn: String
+- descriptionAr: String
+- category: String (maps to challenge categories above)
+- actionType: String (e.g., "CREATE_OFFER", "APPLY_PROGRAM", "COMPLETE_TASK")
+- actionTarget: String (optional — specific program/charity ID)
+- points: Int
+- iconEmoji: String (e.g., "🤝", "🏥", "💰")
+- isActive: Boolean (default true)
+- createdAt: DateTime
+```
+
+**Database Model — `UserChallenge`**
+```
+- id: String (cuid)
+- userId: String
+- challengeId: String
+- status: Enum (PENDING, COMPLETED, EXPIRED)
+- completedAt: DateTime (optional)
+- pointsAwarded: Int (default 0)
+- proofType: String (optional — what action completed it)
+- proofId: String (optional — ID of the post/connection/application that fulfilled it)
+- createdAt: DateTime
+```
+
+**Challenge Completion Detection:**
+When a user performs an action that matches the daily challenge's `actionType`, automatically mark their challenge as completed:
+- `CREATE_OFFER` — triggered when user creates an offer post
+- `CREATE_REQUEST` — triggered when user creates a request post
+- `APPLY_PROGRAM` — triggered when user applies to volunteer program
+- `ACCEPT_CONNECTION` — triggered when user accepts a connection
+- `COMPLETE_TASK` — triggered when user submits task proof
+- `MAKE_DONATION` — triggered when user makes a donation
+- `LEAVE_REVIEW` — triggered when user leaves a review
+- `SHARE_PLATFORM` — triggered when user clicks share button
+- `BROWSE_PROGRAMS` — triggered when user views 3+ program pages
+
+**API Endpoints:**
+- `GET /api/challenges/today` — get today's challenge + user's status
+- `POST /api/challenges/complete` — manually mark challenge complete (for actions that can't auto-detect)
+- `GET /api/challenges/history` — user's challenge history with points
+- `GET /api/challenges/streak` — user's current streak (consecutive days completed)
+
+### 4.5 Challenge Streak & Bonus Points
+
+- Track consecutive days of challenge completion
+- Bonus multiplier:
+  - 3-day streak: 1.5x points
+  - 7-day streak: 2x points
+  - 14-day streak: 2.5x points
+  - 30-day streak: 3x points (Ramadan special)
+- Show streak counter on user profile and challenge card
+- Push notification for streak milestones ("You're on a 7-day streak!")
+
+### 4.6 Service Worker & Offline Support
+
+**Service Worker (`/public/sw.js`):**
+- Register on app load
+- Handle `push` events — show notification with title, body, icon, click URL
+- Handle `notificationclick` — open/focus the app at the specified URL
+- Cache notification assets for offline display
+
+### 4.7 AI-Powered Challenge Generation (Future-Ready API)
+
+**Endpoint:** `POST /api/challenges/generate`
+- Admin-only or CRON-triggered
+- Input: current date, platform stats (active programs, pending requests, etc.)
+- Output: generated DailyChallenge with title, description, category, points
+- For now: use a predefined rotation of challenge templates
+- Future: integrate with Claude API to generate contextual challenges based on real-time platform data
+
+---
+
+## 5. UI Components
+
+### 5.1 Challenge Popup (NotificationPrompt)
+- Location: rendered in root layout, appears on every page load
+- Design: modal overlay, Ramadan gold theme, animated entrance
+- States: initial prompt, permission granted success, permission denied instructions
+
+### 5.2 Daily Challenge Card
+- Location: homepage (prominent position), also in `/challenges` page
+- Shows: today's challenge, points, progress, streak counter
+- Actions: "Start Challenge" button — navigates to relevant feature
+- Timer: countdown to next challenge (midnight Jordan time)
+
+### 5.3 Challenge History Page (`/challenges`)
+- Calendar view of completed challenges
+- Total points earned from challenges
+- Current streak display
+- List of past challenges with completion status
+
+### 5.4 Admin Notification Composer (`/admin/notifications`)
+- Rich form with preview
+- Bilingual fields (en/ar tabs)
+- Send/schedule controls
+- History table with delivery stats
+
+---
+
+## 6. Technical Architecture
+
+### 6.1 VAPID Keys
+- Generate VAPID key pair (stored in environment variables)
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — client-side subscription
+- `VAPID_PRIVATE_KEY` — server-side push sending
+- Use `web-push` npm package for sending notifications
+
+### 6.2 Push Flow
+```
+User opts in -> Browser generates PushSubscription
+-> POST /api/notifications/subscribe (save to DB)
+-> Admin sends notification via portal
+-> Server iterates subscribers, calls web-push for each
+-> Service Worker receives push event -> shows notification
+-> User clicks notification -> opens app at target URL
+```
+
+### 6.3 Daily Challenge Flow
+```
+CRON (midnight UTC+3) or Admin triggers
+-> POST /api/challenges/generate
+-> Creates DailyChallenge record
+-> Push notification sent to all subscribers: "Today's Challenge: ..."
+-> User opens app, sees challenge card
+-> User performs the required action
+-> System auto-detects completion via API hooks
+-> POST /api/challenges/complete (awards points, updates streak)
+-> Push notification: "Challenge completed! +X points"
+```
+
+### 6.4 New Dependencies
+- `web-push` — VAPID-based push notification sending
+- No other new dependencies needed (Next.js + Prisma handle the rest)
+
+---
+
+## 7. Database Schema Additions
+
+Add to `prisma/schema.prisma`:
+
+```prisma
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  endpoint  String   @unique
+  p256dhKey String
+  authKey   String
+  userAgent String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model NotificationLog {
+  id             String    @id @default(cuid())
+  titleEn        String
+  titleAr        String
+  bodyEn         String
+  bodyAr         String
+  iconUrl        String?
+  linkUrl        String?
+  targetType     String    @default("ALL")
+  recipientCount Int       @default(0)
+  sentAt         DateTime  @default(now())
+  scheduledFor   DateTime?
+  status         String    @default("SENT")
+  sentById       String
+
+  sentBy User @relation(fields: [sentById], references: [id])
+
+  @@index([sentById])
+  @@index([sentAt])
+}
+
+model DailyChallenge {
+  id            String   @id @default(cuid())
+  date          DateTime @unique
+  titleEn       String
+  titleAr       String
+  descriptionEn String
+  descriptionAr String
+  category      String
+  actionType    String
+  actionTarget  String?
+  points        Int
+  iconEmoji     String   @default("trophy")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  userChallenges UserChallenge[]
+}
+
+model UserChallenge {
+  id            String    @id @default(cuid())
+  userId        String
+  challengeId   String
+  status        String    @default("PENDING")
+  completedAt   DateTime?
+  pointsAwarded Int       @default(0)
+  proofType     String?
+  proofId       String?
+  createdAt     DateTime  @default(now())
+
+  user      User           @relation(fields: [userId], references: [id])
+  challenge DailyChallenge @relation(fields: [challengeId], references: [id])
+
+  @@unique([userId, challengeId])
+  @@index([userId])
+  @@index([challengeId])
+  @@index([status])
+}
+```
+
+---
+
+## 8. API Summary
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/notifications/subscribe` | POST | Optional | Save push subscription |
+| `/api/notifications/subscribe` | DELETE | Optional | Unsubscribe |
+| `/api/notifications/status` | GET | User | Check subscription status |
+| `/api/admin/notifications/send` | POST | Admin | Send push notification |
+| `/api/admin/notifications/history` | GET | Admin | Notification history |
+| `/api/admin/notifications/stats` | GET | Admin | Subscriber stats |
+| `/api/challenges/today` | GET | User | Get today's challenge |
+| `/api/challenges/complete` | POST | User | Complete challenge |
+| `/api/challenges/history` | GET | User | Challenge history |
+| `/api/challenges/streak` | GET | User | Streak info |
+| `/api/challenges/generate` | POST | Admin/CRON | Generate daily challenge |
+
+---
+
+## 9. Pages
+
+| Route | Purpose |
+|-------|---------|
+| `/challenges` | Daily challenge page with today's challenge, history, streak |
+| `/admin/notifications` | Admin notification composer + history + stats |
+
+---
+
+## 10. Implementation Priority
+
+1. **P0 — Service Worker + Push Subscription** (foundation)
+2. **P0 — Notification Prompt Popup** (user-facing opt-in)
+3. **P0 — Push Subscription API** (backend storage)
+4. **P1 — Admin Notification Portal** (send notifications)
+5. **P1 — Daily Challenge Models + API** (challenge system)
+6. **P1 — Daily Challenge UI** (challenge card + page)
+7. **P2 — Auto-detection hooks** (auto-complete challenges)
+8. **P2 — Streak system** (bonus points + notifications)
+9. **P3 — AI challenge generation** (Claude API integration)
+10. **P3 — Scheduled notifications** (time-based sending)
+
+---
+
+## 11. Environment Variables (New)
+
+```
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=   # VAPID public key for client
+VAPID_PRIVATE_KEY=              # VAPID private key for server
+VAPID_SUBJECT=mailto:admin@takafol.app  # VAPID subject
+```
+
+---
+
+## 12. Non-Functional Requirements
+
+- Push notifications must work on Chrome, Firefox, Edge, Safari 16+
+- Service worker must be served from root path (`/sw.js`)
+- Notification payload must be under 4KB
+- Batch sending: process max 100 subscriptions per batch with 100ms delay
+- Failed subscriptions (410 Gone) must be auto-deactivated
+- All text must support Arabic/English bilingual
+- Points awarded must integrate with existing `impactScore` in User model
+- Challenge completion hooks must be added to existing API routes (posts, connections, programs, donations)

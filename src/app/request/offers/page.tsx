@@ -2,9 +2,12 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Search, SlidersHorizontal, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2, ArrowRight, ArrowLeft, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -18,6 +21,23 @@ import { useLanguage } from "@/components/providers/language-provider";
 import type { PostWithRelations, Category, District } from "@/types";
 
 const ALL_VALUE = "__all__";
+
+interface CharityProgram {
+  id: string;
+  title: string;
+  titleAr: string;
+  description: string | null;
+  descriptionAr: string | null;
+  capacity: number;
+  enrolled: number;
+  charity: { id: string; name: string; nameAr: string; logoUrl: string | null };
+}
+
+function SafeImage({ src, alt, className, fallback }: { src: string; alt: string; className?: string; fallback?: React.ReactNode }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return <>{fallback || null}</>;
+  return <img src={src} alt={alt} className={className} onError={() => setBroken(true)} />;
+}
 
 export default function RequestOffersFeedPage() {
   return (
@@ -49,6 +69,10 @@ function OffersFeedContent() {
   const [urgency, setUrgency] = useState(searchParams.get("urgency") || ALL_VALUE);
   const [search, setSearch] = useState(searchParams.get("search") || "");
 
+  // Charity programs
+  const [charityPrograms, setCharityPrograms] = useState<CharityProgram[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(true);
+
   useEffect(() => {
     async function fetchLookups() {
       const [catRes, distRes] = await Promise.all([
@@ -61,6 +85,10 @@ function OffersFeedContent() {
       if (distData.data) setDistricts(distData.data);
     }
     fetchLookups();
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/programs").then((r) => r.json()).then((d) => { if (d.data) setCharityPrograms(d.data); }).finally(() => setProgramsLoading(false));
   }, []);
 
   const fetchPosts = useCallback(async () => {
@@ -86,6 +114,15 @@ function OffersFeedContent() {
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
+
+  const filteredPrograms = search.trim()
+    ? charityPrograms.filter((p) =>
+        p.title.toLowerCase().includes(search.toLowerCase()) ||
+        p.titleAr.includes(search) ||
+        p.charity.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.charity.nameAr.includes(search)
+      )
+    : charityPrograms;
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-6">
@@ -155,6 +192,59 @@ function OffersFeedContent() {
               <SelectItem value="CRITICAL">{t("urgencyCritical")}</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      )}
+
+      {/* Charity Volunteer Programs */}
+      {!programsLoading && filteredPrograms.length > 0 && (
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t("charityPrograms")}</p>
+            <Badge variant="outline" className="border-emerald-200 text-emerald-700 text-[10px] px-1.5 py-0">
+              <Building2 size={8} className="mr-0.5" />{filteredPrograms.length}
+            </Badge>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {filteredPrograms.map((prog) => {
+              const spotsLeft = Math.max(0, prog.capacity - prog.enrolled);
+              const fillPct = prog.capacity > 0 ? Math.min(100, Math.round((prog.enrolled / prog.capacity) * 100)) : 0;
+              const isFull = prog.capacity > 0 && spotsLeft === 0;
+              return (
+                <a key={prog.id} href={`/offer/charities/${prog.charity.id}`} className="block">
+                  <Card className={`border-gray-200 transition-all hover:shadow-md hover:border-emerald-200 ${isFull ? "opacity-60" : ""}`}>
+                    <CardContent className="p-3">
+                      <div className="flex gap-3">
+                        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
+                          {prog.charity.logoUrl ? (
+                            <SafeImage src={prog.charity.logoUrl} alt={prog.charity.name} className="h-full w-full object-cover" fallback={<Building2 size={20} className="text-gray-300" />} />
+                          ) : (
+                            <Building2 size={20} className="text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-bold text-gray-900 leading-tight line-clamp-2">{lang === "ar" ? prog.titleAr : prog.title}</h3>
+                          <span className="text-[11px] text-gray-500 truncate block mt-0.5">{lang === "ar" ? prog.charity.nameAr : prog.charity.name}</span>
+                          {prog.capacity > 0 && (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <Progress value={fillPct} className="h-1.5 flex-1" />
+                              <span className={`text-[10px] font-medium whitespace-nowrap ${isFull ? "text-red-500" : "text-emerald-600"}`}>
+                                {isFull ? (lang === "ar" ? "مكتمل" : "Full") : `${spotsLeft} ${t("spotsLeft")}`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {programsLoading && (
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
         </div>
       )}
 

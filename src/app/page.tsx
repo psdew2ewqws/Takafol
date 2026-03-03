@@ -1,13 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   HandHeart, HelpCircle, Star, Shield, Users, Heart,
   ClipboardList, Trophy, Telescope, Feather, Gift, Compass,
   ChevronLeft, ChevronRight, X, Eye, BadgeCheck, HeartHandshake,
-  Megaphone, ArrowLeft, ArrowRight,
+  Megaphone, ArrowLeft, ArrowRight, ChevronDown, MessageCircleQuestion,
 } from "lucide-react";
 // NOTE: CTA grid uses original icons: HelpCircle, HandHeart, Trophy, ClipboardList — DO NOT change
 import { AnimatePresence, motion } from "motion/react";
@@ -23,9 +21,13 @@ import {
   InlineCreateOffer,
   InlineCharityDetail,
 } from "@/components/home/inline-views";
+import { InlineTasksList, InlineTaskDetail, InlineCreateTask } from "@/components/home/inline-tasks";
+import { InlineLeaderboard } from "@/components/home/inline-leaderboard";
+import { InlineAchievements } from "@/components/home/inline-achievements";
+import { DailyChallengeCard } from "@/components/challenges/daily-challenge-card";
 
-type PopupType = "offer" | "request" | null;
-type ActiveView = "browse-offers" | "create-request" | "personal" | "browse-requests" | "create-offer" | "charity-detail" | null;
+type PopupType = "offer" | "request" | "tasks" | "leaderboard" | "achievements" | null;
+type ActiveView = "browse-offers" | "create-request" | "personal" | "browse-requests" | "create-offer" | "charity-detail" | "tasks-list" | "task-detail" | "create-task" | "leaderboard" | "achievements" | null;
 
 interface Charity {
   id: string;
@@ -40,13 +42,13 @@ interface Charity {
 
 export default function HomePage() {
   const { t, lang } = useLanguage();
-  const router = useRouter();
   const [activePopup, setActivePopup] = useState<PopupType>(null);
   const [activeView, setActiveView] = useState<ActiveView>(null);
   const [charities, setCharities] = useState<Charity[]>([]);
   const [charitiesLoading, setCharitiesLoading] = useState(false);
   const [selectedCharityId, setSelectedCharityId] = useState<string | null>(null);
   const [selectedCharityName, setSelectedCharityName] = useState("");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const Arrow = lang === "ar" ? ChevronLeft : ChevronRight;
   const BackArrow = lang === "ar" ? ArrowRight : ArrowLeft;
 
@@ -132,28 +134,37 @@ export default function HomePage() {
                 </div>
               </motion.button>
 
-              <Link href="/leaderboard" className="block">
-                <motion.div
-                  className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-md text-white/90 hover:bg-white/[0.12] transition-colors"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Trophy className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
-                  <span className="text-sm font-semibold">{t("navLeaderboard")}</span>
-                </motion.div>
-              </Link>
+              <motion.button
+                onClick={() => { setActivePopup("leaderboard"); setActiveView("leaderboard"); }}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-md text-white/90 hover:bg-white/[0.12] transition-colors cursor-pointer"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Trophy className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
+                <span className="text-sm font-semibold">{t("navLeaderboard")}</span>
+              </motion.button>
 
-              <Link href="/tasks" className="block">
-                <motion.div
-                  className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-md text-white/90 hover:bg-white/[0.12] transition-colors"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <ClipboardList className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
-                  <span className="text-sm font-semibold">{t("navTasks")}</span>
-                </motion.div>
-              </Link>
+              <motion.button
+                onClick={() => { setActivePopup("tasks"); setActiveView("tasks-list"); }}
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.07] backdrop-blur-md text-white/90 hover:bg-white/[0.12] transition-colors cursor-pointer"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <ClipboardList className="h-4.5 w-4.5 text-amber-300" strokeWidth={1.8} />
+                <span className="text-sm font-semibold">{t("navTasks")}</span>
+              </motion.button>
             </div>
+
+            {/* Achievements Button */}
+            <motion.button
+              onClick={() => { setActivePopup("achievements"); setActiveView("achievements"); }}
+              className="mt-3 flex h-11 w-full max-w-md mx-auto items-center justify-center gap-2 rounded-2xl border border-amber-300/30 bg-gradient-to-r from-amber-400/10 via-emerald-400/10 to-amber-400/10 backdrop-blur-md text-white/90 hover:from-amber-400/20 hover:to-amber-400/20 transition-all cursor-pointer"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Star className="h-4.5 w-4.5 text-amber-300 fill-amber-300/50" strokeWidth={1.8} />
+              <span className="text-sm font-semibold">{t("achievements")}</span>
+            </motion.button>
           </div>
         </div>
 
@@ -163,6 +174,11 @@ export default function HomePage() {
           </svg>
         </div>
       </section>
+
+      {/* Daily Challenge Card */}
+      <div className="max-w-md mx-auto px-4 py-6">
+        <DailyChallengeCard />
+      </div>
 
       {/* Popup Overlay */}
       <AnimatePresence>
@@ -189,7 +205,7 @@ export default function HomePage() {
               initial={{ opacity: 0, scale: 0.92, y: 60 }}
               animate={{
                 opacity: 1, scale: 1, y: 0,
-                maxWidth: activeView ? 1100 : 440,
+                maxWidth: activeView ? ((activeView === "leaderboard" || activeView === "achievements") ? 600 : 1100) : 480,
                 height: activeView ? "92vh" : "auto",
                 maxHeight: activeView ? "92vh" : "85vh",
               }}
@@ -210,11 +226,23 @@ export default function HomePage() {
                     {/* Inline View Header */}
                     <div className="flex items-center gap-3 px-5 pt-4 pb-3 shrink-0 border-b border-gray-100">
                       <motion.button
-                        onClick={() => setActiveView(null)}
+                        onClick={() => {
+                          if (activeView === "task-detail" || activeView === "create-task") {
+                            setActiveView("tasks-list");
+                          } else if (activeView === "tasks-list" || activeView === "leaderboard" || activeView === "achievements") {
+                            closePopup();
+                          } else {
+                            setActiveView(null);
+                          }
+                        }}
                         className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
                         whileTap={{ scale: 0.9 }}
                       >
-                        <BackArrow size={20} strokeWidth={2} />
+                        {(activeView === "tasks-list" || activeView === "leaderboard" || activeView === "achievements") ? (
+                          <X size={18} strokeWidth={2.5} />
+                        ) : (
+                          <BackArrow size={20} strokeWidth={2} />
+                        )}
                       </motion.button>
                       <div className="flex-1 min-w-0">
                         <p className="text-base font-bold text-gray-900 truncate">
@@ -224,6 +252,11 @@ export default function HomePage() {
                           {activeView === "browse-requests" && t("browseRequests")}
                           {activeView === "create-offer" && t("createOffer")}
                           {activeView === "charity-detail" && selectedCharityName}
+                          {activeView === "tasks-list" && t("volunteerTasks")}
+                          {activeView === "task-detail" && t("aboutThisTask")}
+                          {activeView === "create-task" && t("createTask")}
+                          {activeView === "leaderboard" && t("leaderboardTitle")}
+                          {activeView === "achievements" && t("achievements")}
                         </p>
                       </div>
                       <button
@@ -242,6 +275,16 @@ export default function HomePage() {
                       {activeView === "browse-requests" && <InlineBrowseRequests />}
                       {activeView === "create-offer" && <InlineCreateOffer onSuccess={() => setActiveView("personal")} />}
                       {activeView === "charity-detail" && selectedCharityId && <InlineCharityDetail charityId={selectedCharityId} />}
+                      {activeView === "tasks-list" && (
+                        <InlineTasksList
+                          onSelectTask={(id) => { setSelectedTaskId(id); setActiveView("task-detail"); }}
+                          onCreateTask={() => setActiveView("create-task")}
+                        />
+                      )}
+                      {activeView === "task-detail" && selectedTaskId && <InlineTaskDetail taskId={selectedTaskId} />}
+                      {activeView === "create-task" && <InlineCreateTask onSuccess={() => setActiveView("tasks-list")} />}
+                      {activeView === "leaderboard" && <InlineLeaderboard />}
+                      {activeView === "achievements" && <InlineAchievements />}
                     </div>
 
                     {/* Bottom accent bar */}
@@ -272,12 +315,12 @@ export default function HomePage() {
                           animate={{ scale: 1, rotate: 0 }}
                           transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
                         >
-                          <HeartHandshake className="mx-auto h-9 w-9 text-emerald-600 mb-2" strokeWidth={1.6} />
+                          <HeartHandshake className="mx-auto h-10 w-10 text-emerald-600 mb-2" strokeWidth={1.6} />
                         </motion.div>
-                        <h3 className="text-xl font-bold text-gray-900">
+                        <h3 className="text-2xl font-bold text-gray-900">
                           {t("offerHubTitle")}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1">{t("offerHubSubtitle")}</p>
+                        <p className="text-sm text-gray-600 mt-1">{t("offerHubSubtitle")}</p>
                       </div>
                     </div>
 
@@ -291,10 +334,10 @@ export default function HomePage() {
                           transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
                         >
                           <PopupOption
-                            icon={<Gift className="h-7 w-7 text-amber-500" strokeWidth={1.7} />}
+                            icon={<Gift className="h-8 w-8 text-amber-500" strokeWidth={1.7} />}
                             title={t("personalContribution")}
                             description={t("personalContributionDesc")}
-                            arrow={<Arrow size={18} className="text-gray-400" />}
+                            arrow={<Arrow size={20} className="text-gray-400" />}
                             onClick={() => setActiveView("personal")}
                           />
                         </motion.div>
@@ -304,10 +347,10 @@ export default function HomePage() {
                           transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 25 }}
                         >
                           <PopupOption
-                            icon={<Compass className="h-7 w-7 text-emerald-600" strokeWidth={1.7} />}
+                            icon={<Compass className="h-8 w-8 text-emerald-600" strokeWidth={1.7} />}
                             title={t("browseRequests")}
                             description={t("browseRequestsDesc")}
-                            arrow={<Arrow size={18} className="text-gray-400" />}
+                            arrow={<Arrow size={20} className="text-gray-400" />}
                             onClick={() => setActiveView("browse-requests")}
                           />
                         </motion.div>
@@ -322,7 +365,7 @@ export default function HomePage() {
                       {/* Charities Section */}
                       <div className="px-4 pt-2 pb-4">
                         <motion.p
-                          className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3"
+                          className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-3"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.2 }}
@@ -374,34 +417,25 @@ export default function HomePage() {
                                     setActiveView("charity-detail");
                                   }}
                                 >
-                                  {charity.logoUrl ? (
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100 overflow-hidden">
-                                      <img
-                                        src={charity.logoUrl}
-                                        alt={name}
-                                        className="h-9 w-9 object-contain p-0.5"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
-                                      <HandHeart size={16} className="text-emerald-600" />
-                                    </div>
-                                  )}
+                                  <CharityLogoSmall
+                                    src={charity.logoUrl}
+                                    alt={name}
+                                  />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5">
-                                      <p className="text-sm font-bold text-gray-900 truncate">{name}</p>
+                                      <p className="text-[15px] font-bold text-gray-900 truncate">{name}</p>
                                       {charity.isVerified && (
-                                        <BadgeCheck size={14} className="shrink-0 text-emerald-600" />
+                                        <BadgeCheck size={15} className="shrink-0 text-emerald-600" />
                                       )}
                                     </div>
                                     {desc && (
-                                      <p className="text-xs text-gray-500 truncate mt-0.5">{desc}</p>
+                                      <p className="text-sm text-gray-600 truncate mt-0.5">{desc}</p>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
                                     {charity._count && charity._count.volunteerPrograms > 0 && (
-                                      <Badge variant="outline" className="text-[10px] px-2 py-0.5 h-5 border-emerald-200 text-emerald-700">
-                                        <Users size={10} className="me-0.5" />
+                                      <Badge variant="outline" className="text-xs px-2 py-0.5 h-6 border-emerald-200 text-emerald-700">
+                                        <Users size={12} className="me-0.5" />
                                         {charity._count.volunteerPrograms}
                                       </Badge>
                                     )}
@@ -440,9 +474,9 @@ export default function HomePage() {
                           animate={{ scale: 1, rotate: 0 }}
                           transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
                         >
-                          <Megaphone className="mx-auto h-9 w-9 text-amber-500 mb-2" strokeWidth={1.6} />
+                          <Megaphone className="mx-auto h-10 w-10 text-amber-500 mb-2" strokeWidth={1.6} />
                         </motion.div>
-                        <h3 className="text-xl font-bold text-gray-900">
+                        <h3 className="text-2xl font-bold text-gray-900">
                           {t("requestHelp")}
                         </h3>
                       </div>
@@ -457,10 +491,10 @@ export default function HomePage() {
                         transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
                       >
                         <PopupOption
-                          icon={<Telescope className="h-7 w-7 text-emerald-600" strokeWidth={1.7} />}
+                          icon={<Telescope className="h-8 w-8 text-emerald-600" strokeWidth={1.7} />}
                           title={t("browseOffers")}
                           description={t("browseOffersDesc")}
-                          arrow={<Arrow size={18} className="text-gray-400" />}
+                          arrow={<Arrow size={20} className="text-gray-400" />}
                           onClick={() => setActiveView("browse-offers")}
                         />
                       </motion.div>
@@ -470,10 +504,10 @@ export default function HomePage() {
                         transition={{ delay: 0.15, type: "spring", stiffness: 300, damping: 25 }}
                       >
                         <PopupOption
-                          icon={<Feather className="h-7 w-7 text-amber-500" strokeWidth={1.7} />}
+                          icon={<Feather className="h-8 w-8 text-amber-500" strokeWidth={1.7} />}
                           title={t("createRequest")}
                           description={t("createRequestDesc")}
-                          arrow={<Arrow size={18} className="text-gray-400" />}
+                          arrow={<Arrow size={20} className="text-gray-400" />}
                           onClick={() => setActiveView("create-request")}
                         />
                       </motion.div>
@@ -563,6 +597,31 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section className="border-t border-emerald-100 bg-white">
+        <div className="container mx-auto max-w-3xl px-4 py-16 md:py-24">
+          <div className="mb-10 text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 mb-4">
+              <MessageCircleQuestion className="h-7 w-7 text-emerald-600" strokeWidth={1.6} />
+            </div>
+            <h2 className="text-2xl font-bold text-emerald-800 md:text-3xl">
+              {t("faqTitle")}
+            </h2>
+            <p className="text-sm text-gray-600 mt-2">{t("faqSubtitle")}</p>
+          </div>
+
+          <div className="space-y-2">
+            {([1,2,3,4,5,6,7,8,9,10] as const).map((n) => (
+              <FaqItem
+                key={n}
+                question={t(`faqQ${n}` as const)}
+                answer={t(`faqA${n}` as const)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Stats */}
       <section className="border-t border-emerald-100 bg-emerald-50/50">
         <div className="container mx-auto px-4 py-12">
@@ -602,16 +661,37 @@ function PopupOption({
   return (
     <motion.button
       onClick={onClick}
-      className="flex w-full items-center gap-4 rounded-2xl px-4 py-4 text-start transition-colors hover:bg-gray-50/80 cursor-pointer"
+      className="flex w-full items-center gap-4 rounded-2xl px-4 py-5 text-start transition-colors hover:bg-gray-50/80 cursor-pointer"
       whileTap={{ scale: 0.98 }}
     >
       <div className="shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-bold text-gray-900">{title}</p>
-        <p className="text-[13px] leading-relaxed text-gray-500 line-clamp-2 mt-0.5">{description}</p>
+        <p className="text-base font-bold text-gray-900">{title}</p>
+        <p className="text-sm leading-relaxed text-gray-600 line-clamp-2 mt-1">{description}</p>
       </div>
       <div className="shrink-0">{arrow}</div>
     </motion.button>
+  );
+}
+
+function CharityLogoSmall({ src, alt }: { src: string | null; alt: string }) {
+  const [broken, setBroken] = useState(false);
+  if (!src || broken) {
+    return (
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+        <HandHeart size={16} className="text-emerald-600" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100 overflow-hidden">
+      <img
+        src={src}
+        alt={alt}
+        className="h-9 w-9 object-contain p-0.5"
+        onError={() => setBroken(true)}
+      />
+    </div>
   );
 }
 
@@ -621,6 +701,44 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
       <div className="mb-4">{icon}</div>
       <h3 className="mb-2 text-lg font-semibold text-gray-900">{title}</h3>
       <p className="text-sm leading-relaxed text-gray-600">{description}</p>
+    </div>
+  );
+}
+
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-gray-50/50 overflow-hidden transition-colors hover:bg-gray-50">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-3 px-5 py-4 text-start cursor-pointer"
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-gray-900">{question}</p>
+        </div>
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="shrink-0"
+        >
+          <ChevronDown size={18} className="text-gray-400" />
+        </motion.div>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            <div className="px-5 pb-4">
+              <div className="h-px bg-gray-200/60 mb-3" />
+              <p className="text-sm leading-relaxed text-gray-600">{answer}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

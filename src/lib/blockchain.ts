@@ -8,6 +8,7 @@ const CONTRACT_ABI = [
   "function logProof(string connectionId, bytes32 proofHash) external",
   "function logCompletion(string connectionId, string confirmedBy) external",
   "function logTaskCompleted(string connectionId, uint8 giverRating, uint8 requesterRating) external",
+  "function logCertificate(string certificateId, string recipientId, bytes32 certHash) external",
   "event ZakatDonation(string donationId, string donorId, string charityId, string amount, string currency, uint256 timestamp)",
   "event OfferCreated(string offerId, string giverId, string category, string district, string description, uint256 timestamp)",
   "event RequestCreated(string requestId, string requesterId, string category, string district, string description, uint256 timestamp)",
@@ -15,6 +16,7 @@ const CONTRACT_ABI = [
   "event ProofSubmitted(string connectionId, bytes32 proofHash, uint256 timestamp)",
   "event CompletionConfirmed(string connectionId, string confirmedBy, uint256 timestamp)",
   "event TaskCompleted(string connectionId, uint8 giverRating, uint8 requesterRating, uint256 timestamp)",
+  "event CertificateIssued(string certificateId, string recipientId, bytes32 certHash, uint256 timestamp)",
 ];
 
 function getContract() {
@@ -118,4 +120,12 @@ export async function logTaskCompleted(
   requesterRating: number
 ) {
   return logToBlockchain('logTaskCompleted', connectionId, giverRating, requesterRating);
+}
+
+export async function logCertificate(
+  certificateId: string,
+  recipientId: string,
+  certHash: string
+) {
+  return logToBlockchain('logCertificate', certificateId, recipientId, certHash);
 }

@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { logOffer, logRequest } from "@/lib/blockchain";
+import { tryAutoCompleteChallenge } from "@/lib/challenge-auto-complete";
+import { grantPoints } from "@/lib/gamification";
 import type { ApiResponse, PostWithRelations, CreatePostInput, PostFilters } from "@/types";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -163,6 +165,18 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       type: body.type,
     });
+
+    // Auto-complete daily challenge
+    tryAutoCompleteChallenge(
+      session.user.id,
+      post.type === "OFFER" ? "CREATE_OFFER" : "CREATE_REQUEST",
+      post.id
+    );
+
+    // Gamification: award points for creating post
+    const action = post.type === "OFFER" ? "CREATE_OFFER" : "CREATE_REQUEST";
+    grantPoints(session.user.id, action, JSON.stringify({ postId: post.id }))
+      .catch((err) => logger.error("Gamification error", "PostsAPI", { error: String(err) }));
 
     // Log to blockchain (non-blocking)
     const blockchainFn = body.type === "REQUEST" ? logRequest : logOffer;

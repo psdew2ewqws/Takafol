@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { logCompletion, logTaskCompleted } from "@/lib/blockchain";
 import { IMPACT_POINTS } from "@/lib/constants";
+import { tryAutoCompleteChallenge } from "@/lib/challenge-auto-complete";
+import { grantPoints } from "@/lib/gamification";
 import type { ApiResponse, ConnectionWithRelations, UpdateConnectionInput } from "@/types";
 
 const CONNECTION_SELECT = {
@@ -22,6 +24,8 @@ const CONNECTION_SELECT = {
   giverPoints: true,
   requesterPoints: true,
   blockchainTx: true,
+  completionTx: true,
+  ratingTx: true,
   blockchainVerified: true,
   createdAt: true,
   updatedAt: true,
@@ -236,13 +240,20 @@ export async function PATCH(
         requesterId: existing.requesterId,
       });
 
-      // Log completion to blockchain (non-blocking)
+      // Gamification: award points for completing connection
+      const meta = JSON.stringify({ connectionId: id });
+      grantPoints(existing.giverId, "COMPLETE_CONNECTION_GIVER", meta)
+        .catch((err) => logger.error("Gamification error", "ConnectionAPI", { error: String(err) }));
+      grantPoints(existing.requesterId, "COMPLETE_CONNECTION_REQUESTER", meta)
+        .catch((err) => logger.error("Gamification error", "ConnectionAPI", { error: String(err) }));
+
+      // Log completion to blockchain (non-blocking) — save to completionTx (separate from connection blockchainTx)
       logCompletion(id, session.user.id)
         .then(async (result) => {
           if (result) {
             await prisma.connection.update({
               where: { id },
-              data: { blockchainTx: result.txHash, blockchainVerified: true },
+              data: { completionTx: result.txHash, blockchainVerified: true },
             });
             logger.info("Completion blockchain tx logged", "ConnectionAPI", {
               connectionId: id,
@@ -269,7 +280,22 @@ export async function PATCH(
       select: CONNECTION_SELECT,
     });
 
-    // Log to blockchain when both ratings are submitted
+    // Auto-complete daily challenge when a review/rating is submitted
+    if (body.giverRating !== undefined || body.requesterRating !== undefined) {
+      tryAutoCompleteChallenge(session.user.id, "LEAVE_REVIEW", connection.id);
+      // Gamification: award points for rating
+      grantPoints(session.user.id, "RATE_PARTNER", JSON.stringify({ connectionId: connection.id }))
+        .catch((err) => logger.error("Gamification error", "ConnectionAPI", { error: String(err) }));
+      // Check if they received a 5-star
+      const rating = body.giverRating ?? body.requesterRating;
+      if (rating === 5) {
+        const recipientId = body.giverRating !== undefined ? existing.giverId : existing.requesterId;
+        grantPoints(recipientId, "RECEIVE_FIVE_STAR", JSON.stringify({ connectionId: connection.id }))
+          .catch((err) => logger.error("Gamification error", "ConnectionAPI", { error: String(err) }));
+      }
+    }
+
+    // Log to blockchain when both ratings are submitted — save to ratingTx
     if (
       connection.giverRating &&
       connection.requesterRating
@@ -277,6 +303,10 @@ export async function PATCH(
       logTaskCompleted(id, connection.giverRating, connection.requesterRating)
         .then(async (result) => {
           if (result) {
+            await prisma.connection.update({
+              where: { id },
+              data: { ratingTx: result.txHash },
+            });
             logger.info("TaskCompleted blockchain tx logged", "ConnectionAPI", {
               connectionId: id,
               txHash: result.txHash,

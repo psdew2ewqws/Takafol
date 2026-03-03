@@ -9,7 +9,7 @@ export async function GET() {
     const programs = await prisma.volunteerProgram.findMany({
       where: { isActive: true },
       include: {
-        charity: { select: { id: true, name: true, nameAr: true } },
+        charity: { select: { id: true, name: true, nameAr: true, logoUrl: true } },
         _count: { select: { applications: true } },
       },
       orderBy: { createdAt: "desc" },

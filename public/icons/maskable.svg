@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Maskable icon: safe zone is inner 80% circle, so heart is smaller -->
+  <rect width="512" height="512" fill="#065F46"/>
+  <path d="M256 380 C210 340 165 295 165 248 C165 215 188 192 220 192 C237 192 252 200 260 213 C268 200 283 192 300 192 C332 192 355 215 355 248 C355 295 310 340 256 380Z" fill="#FBBF24"/>
+</svg>

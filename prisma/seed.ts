@@ -19,6 +19,7 @@ const CATEGORIES = [
 ];
 
 const DISTRICTS = [
+  { id: "amman", nameEn: "Amman", nameAr: "عمّان" },
   { id: "tla_ali", nameEn: "Tla' Al-Ali", nameAr: "تلاع العلي" },
   { id: "abdoun", nameEn: "Abdoun", nameAr: "عبدون" },
   { id: "jabal_amman", nameEn: "Jabal Amman", nameAr: "جبل عمان" },
@@ -63,7 +64,7 @@ async function main() {
       descriptionAr: "أكبر مؤسسة إغاثة غذائية في الأردن، تكافح الجوع منذ 2003.",
       logoUrl: "/charities/tikyet-um-ali.png",
       website: "https://www.tua.jo",
-      cliqAlias: "TUAZAKATJO",
+      cliqAlias: "TUA",
       iban: null,
       isVerified: true,
       isActive: true,
@@ -77,7 +78,33 @@ async function main() {
       logoUrl: "/charities/jhco.png",
       website: "https://www.jhco.org.jo",
       cliqAlias: "JHCOGAZA",
-      iban: "JO32UBSI1030000040101659915106",
+      iban: "JO32UBSI1030000040101659",
+      isVerified: true,
+      isActive: true,
+    },
+    {
+      id: "johud",
+      name: "Jordanian Hashemite Fund for Human Development",
+      nameAr: "الهيئة الخيرية الأردنية الهاشمية",
+      description: "A leading Jordanian charity for relief and development since 1999.",
+      descriptionAr: "مؤسسة خيرية رائدة في الإغاثة والتنمية.",
+      logoUrl: "/charities/johud.png",
+      website: "https://johud.org.jo",
+      cliqAlias: "JOHUD",
+      iban: "JO96JIBA0020000025000410400015",
+      isVerified: true,
+      isActive: true,
+    },
+    {
+      id: "jordan_humanitarian",
+      name: "Jordan Humanitarian Aid Society",
+      nameAr: "المساعدات الإنسانية الأردنية",
+      description: "Providing humanitarian aid across all regions of Jordan.",
+      descriptionAr: "تقديم المساعدات الإنسانية في جميع أنحاء الأردن.",
+      logoUrl: null,
+      website: null,
+      cliqAlias: null,
+      iban: null,
       isVerified: true,
       isActive: true,
     },
@@ -101,8 +128,8 @@ async function main() {
       description: "Provides food parcels and hot meals to families in need during Ramadan and beyond.",
       descriptionAr: "تقدم الطرود الغذائية والوجبات الساخنة للعائلات المحتاجة في رمضان وغيره.",
       logoUrl: null,
-      website: null,
-      cliqAlias: null,
+      website: "https://www.tua.jo",
+      cliqAlias: "TUA",
       iban: null,
       isVerified: true,
       isActive: true,
@@ -207,66 +234,51 @@ async function main() {
     },
   });
 
-  // Seed sample volunteer tasks
-  const SAMPLE_TASKS = [
-    {
-      id: "task_iftar_distribution",
-      creatorId: (await prisma.user.findFirst({ where: { email: "admin@takafol.com" } }))?.id || "admin",
-      creatorName: "مدير النظام",
-      title: "توزيع وجبات إفطار",
-      description: "توزيع 200 وجبة إفطار على العائلات المحتاجة في منطقة جبل الحسين. نحتاج متطوعين للتعبئة والتوزيع.",
-      category: "food",
-      impactLetter: "كل وجبة هي فرصة لإسعاد عائلة وخلق ذكرى جميلة. انضم لنا واصنع الفرق في رمضان.",
-      maxVolunteers: 15,
-      currentVolunteers: 3,
-      status: "approved",
-      location: "جبل الحسين، عمان",
-    },
-    {
-      id: "task_clothes_sorting",
-      creatorId: (await prisma.user.findFirst({ where: { email: "admin@takafol.com" } }))?.id || "admin",
-      creatorName: "مدير النظام",
-      title: "فرز وتوزيع ملابس",
-      description: "فرز وتوزيع ملابس العيد على الأطفال في مناطق الزرقاء. نحتاج متطوعين للفرز والتغليف.",
-      category: "clothes",
-      impactLetter: "ملابس العيد تعني الكثير للأطفال. ساعدنا نرسم الفرحة على وجوههم.",
-      maxVolunteers: 10,
-      currentVolunteers: 1,
-      status: "approved",
-      location: "الزرقاء",
-    },
-    {
-      id: "task_tutoring",
-      creatorId: (await prisma.user.findFirst({ where: { email: "admin@takafol.com" } }))?.id || "admin",
-      creatorName: "مدير النظام",
-      title: "دروس تقوية للطلاب",
-      description: "تقديم دروس تقوية مجانية في الرياضيات والعلوم لطلاب التوجيهي في إربد.",
-      category: "education",
-      maxVolunteers: 5,
-      currentVolunteers: 0,
-      status: "pending",
-      location: "إربد",
-    },
+  // Seed gamification badges
+  const BADGES = [
+    // Helping badges
+    { key: "first_connection", nameEn: "Helping Hand", nameAr: "يد العون", descEn: "Complete your first connection", descAr: "أكمل أول تواصل لك", category: "helping", icon: "🤝", threshold: 1 },
+    { key: "helping_hand_5", nameEn: "Frequent Helper", nameAr: "مساعد دائم", descEn: "Complete 5 connections", descAr: "أكمل 5 تواصلات", category: "helping", icon: "✋", threshold: 5 },
+    { key: "generosity_champion", nameEn: "Generosity Champion", nameAr: "بطل الكرم", descEn: "Complete 25 connections", descAr: "أكمل 25 تواصل", category: "helping", icon: "👑", threshold: 25 },
+    { key: "big_heart_50", nameEn: "Big Heart", nameAr: "قلب كبير", descEn: "Complete 50 connections", descAr: "أكمل 50 تواصل", category: "helping", icon: "❤️‍🔥", threshold: 50 },
+    { key: "community_benefactor", nameEn: "Community Benefactor", nameAr: "محسن المجتمع", descEn: "Complete 100 connections", descAr: "أكمل 100 تواصل", category: "helping", icon: "🏛️", threshold: 100 },
+    { key: "active_volunteer", nameEn: "Active Volunteer", nameAr: "متطوع نشط", descEn: "Complete 5 volunteer tasks", descAr: "أكمل 5 مهام تطوعية", category: "helping", icon: "⚡", threshold: 5 },
+    { key: "task_master_10", nameEn: "Task Master", nameAr: "سيد المهام", descEn: "Complete 10 volunteer tasks", descAr: "أكمل 10 مهام تطوعية", category: "helping", icon: "🎯", threshold: 10 },
+    // Streak badges
+    { key: "streak_3", nameEn: "Getting Started", nameAr: "بداية موفقة", descEn: "Maintain a 3-day streak", descAr: "حافظ على سلسلة 3 أيام", category: "streak", icon: "✨", threshold: 3 },
+    { key: "persistent_7", nameEn: "Persistent", nameAr: "مثابر", descEn: "Maintain a 7-day streak", descAr: "حافظ على سلسلة 7 أيام", category: "streak", icon: "🔥", threshold: 7 },
+    { key: "streak_14", nameEn: "Two Weeks Strong", nameAr: "أسبوعان متواصلان", descEn: "Maintain a 14-day streak", descAr: "حافظ على سلسلة 14 يوم", category: "streak", icon: "🌙", threshold: 14 },
+    { key: "committed_30", nameEn: "Committed", nameAr: "ملتزم", descEn: "Maintain a 30-day streak", descAr: "حافظ على سلسلة 30 يوم", category: "streak", icon: "💎", threshold: 30 },
+    { key: "streak_60", nameEn: "Unstoppable", nameAr: "لا يوقفه شيء", descEn: "Maintain a 60-day streak", descAr: "حافظ على سلسلة 60 يوم", category: "streak", icon: "☀️", threshold: 60 },
+    { key: "legendary_100", nameEn: "Legendary Streak", nameAr: "سلسلة أسطورية", descEn: "Maintain a 100-day streak", descAr: "حافظ على سلسلة 100 يوم", category: "streak", icon: "🌟", threshold: 100 },
+    // Social badges
+    { key: "first_rating", nameEn: "First Rating", nameAr: "أول تقييم", descEn: "Rate someone for the first time", descAr: "قيّم شخصاً لأول مرة", category: "social", icon: "⭐", threshold: 1 },
+    { key: "gold_star", nameEn: "Gold Star", nameAr: "نجمة ذهبية", descEn: "Maintain 4.5+ average rating over 10+ ratings", descAr: "حافظ على تقييم 4.5+ فوق 10 تقييمات", category: "social", icon: "🥇", threshold: 10 },
+    { key: "trusted_20", nameEn: "Trusted", nameAr: "موثوق", descEn: "Receive 20 five-star ratings", descAr: "احصل على 20 تقييم 5 نجوم", category: "social", icon: "🛡️", threshold: 20 },
+    // Special badges
+    { key: "first_donor", nameEn: "Donor", nameAr: "متبرع", descEn: "Make your first Zakat donation", descAr: "قم بأول تبرع زكاة", category: "special", icon: "💝", threshold: 1 },
+    { key: "generous_donor_5", nameEn: "Generous Donor", nameAr: "متبرع كريم", descEn: "Make 5 Zakat donations", descAr: "قم بـ 5 تبرعات زكاة", category: "special", icon: "💰", threshold: 5 },
+    { key: "expert_level4", nameEn: "Expert", nameAr: "خبير", descEn: "Reach Inspirer tier (Level 4)", descAr: "اوصل لمستوى ملهم", category: "special", icon: "🎓", threshold: 4 },
+    { key: "living_legend", nameEn: "Living Legend", nameAr: "أسطورة حية", descEn: "Reach Legend tier (Level 5)", descAr: "اوصل لمستوى أسطورة", category: "special", icon: "🏆", threshold: 5 },
   ];
 
-  for (const task of SAMPLE_TASKS) {
-    await prisma.task.upsert({
-      where: { id: task.id },
+  for (const badge of BADGES) {
+    await prisma.badge.upsert({
+      where: { key: badge.key },
       update: {
-        title: task.title,
-        description: task.description,
-        category: task.category,
-        impactLetter: task.impactLetter,
-        maxVolunteers: task.maxVolunteers,
-        currentVolunteers: task.currentVolunteers,
-        status: task.status,
-        location: task.location,
+        nameEn: badge.nameEn,
+        nameAr: badge.nameAr,
+        descEn: badge.descEn,
+        descAr: badge.descAr,
+        category: badge.category,
+        icon: badge.icon,
+        threshold: badge.threshold,
       },
-      create: task,
+      create: badge,
     });
   }
 
-  console.info(`Seeded ${CATEGORIES.length} categories, ${DISTRICTS.length} districts, ${CHARITIES.length} charities, ${PROGRAMS.length} volunteer programs, ${SAMPLE_TASKS.length} tasks, and 1 admin user`);
+  console.info(`Seeded ${CATEGORIES.length} categories, ${DISTRICTS.length} districts, ${CHARITIES.length} charities, ${PROGRAMS.length} volunteer programs, ${BADGES.length} badges, and 1 admin user`);
 }
 
 main()

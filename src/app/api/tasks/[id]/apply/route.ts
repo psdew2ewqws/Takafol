@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { grantPoints } from '@/lib/gamification';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -54,6 +55,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       return application;
     });
+
+    // Gamification: award points for joining task
+    grantPoints(volunteerId, "APPLY_VOLUNTEER_TASK", JSON.stringify({ taskId: id }))
+      .catch((err) => console.error("Gamification error:", err));
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

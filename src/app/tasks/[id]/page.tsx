@@ -251,15 +251,13 @@ export default function TaskDetailPage() {
               completedAt={myApplication.completedAt}
             />
           )}
-          <ImpactCertificate
+          <CertificateWithDownload
+            taskId={task.id}
             volunteerName={userName}
             taskTitle={task.title}
             category={task.category}
             impactLetter={task.impactLetter}
             completedAt={myApplication.completedAt || new Date().toISOString()}
-            proofTxHash={myApplication.proofTxHash}
-            proofExplorerUrl={myApplication.proofExplorerUrl}
-            taskTxHash={task.txHash}
           />
         </>
       )}
@@ -273,5 +271,51 @@ export default function TaskDetailPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+function CertificateWithDownload({
+  taskId, volunteerName, taskTitle, category, impactLetter, completedAt,
+}: {
+  taskId: string; volunteerName: string; taskTitle: string;
+  category: string; impactLetter?: string | null; completedAt: string;
+}) {
+  const [certificateId, setCertificateId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function ensureCertificate() {
+      try {
+        const res = await fetch("/api/certificates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId }),
+        });
+        const data = await res.json();
+        if (data.data?.id) {
+          setCertificateId(data.data.id);
+        }
+      } catch {
+        try {
+          const res = await fetch("/api/certificates");
+          const data = await res.json();
+          if (data.data) {
+            const cert = data.data.find((c: { taskId: string }) => c.taskId === taskId);
+            if (cert) setCertificateId(cert.id);
+          }
+        } catch { /* silent */ }
+      }
+    }
+    ensureCertificate();
+  }, [taskId]);
+
+  return (
+    <ImpactCertificate
+      volunteerName={volunteerName}
+      taskTitle={taskTitle}
+      category={category}
+      impactLetter={impactLetter}
+      completedAt={completedAt}
+      certificateId={certificateId}
+    />
   );
 }

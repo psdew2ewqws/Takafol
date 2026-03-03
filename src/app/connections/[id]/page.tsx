@@ -12,6 +12,9 @@ import {
   XCircle,
   Loader2,
   Star,
+  Award,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,11 +59,16 @@ export default function ConnectionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
+  const [pollingForTx, setPollingForTx] = useState(false);
 
   // Rating dialog
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState("");
+
+  // Certificate
+  const [certificateId, setCertificateId] = useState<string | null>(null);
+  const [generatingCert, setGeneratingCert] = useState(false);
 
   useEffect(() => {
     async function fetchConnection() {
@@ -78,6 +86,36 @@ export default function ConnectionDetailPage() {
     if (id) fetchConnection();
   }, [id, t]);
 
+  // Poll for blockchain TX updates after status changes (non-blocking TX takes time to mine)
+  async function pollForBlockchainTx() {
+    setPollingForTx(true);
+    let attempts = 0;
+    const maxAttempts = 6;
+    const interval = 5000; // 5 seconds
+    const poll = async () => {
+      attempts++;
+      try {
+        const res = await fetch(`/api/connections/${id}`);
+        const data = await res.json();
+        if (data.data) {
+          setConnection(data.data);
+          const conn = data.data as Record<string, unknown>;
+          // Stop polling once we see a new TX or we've tried enough
+          if (conn.blockchainTx || conn.completionTx || conn.ratingTx || attempts >= maxAttempts) {
+            setPollingForTx(false);
+            return;
+          }
+        }
+      } catch { /* ignore */ }
+      if (attempts < maxAttempts) {
+        setTimeout(poll, interval);
+      } else {
+        setPollingForTx(false);
+      }
+    };
+    setTimeout(poll, interval);
+  }
+
   async function updateStatus(newStatus: ConnectionStatus) {
     setUpdating(true);
     setError("");
@@ -93,6 +131,10 @@ export default function ConnectionDetailPage() {
         return;
       }
       setConnection(data.data);
+      // Poll for blockchain TX if completing (non-blocking TX takes time)
+      if (newStatus === "COMPLETED") {
+        pollForBlockchainTx();
+      }
     } catch {
       setError(t("unexpectedError"));
     } finally {
@@ -123,10 +165,33 @@ export default function ConnectionDetailPage() {
       }
       setConnection(data.data);
       setShowRating(false);
+      // Poll for ratingTx (both ratings may trigger logTaskCompleted)
+      pollForBlockchainTx();
     } catch {
       setError(t("unexpectedError"));
     } finally {
       setUpdating(false);
+    }
+  }
+
+  async function generateCertificate() {
+    setGeneratingCert(true);
+    try {
+      const res = await fetch("/api/certificates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId: id }),
+      });
+      const data = await res.json();
+      if (data.data?.id) {
+        setCertificateId(data.data.id);
+      } else {
+        setError(data.error || "Failed to generate certificate");
+      }
+    } catch {
+      setError("Failed to generate certificate");
+    } finally {
+      setGeneratingCert(false);
     }
   }
 
@@ -154,6 +219,8 @@ export default function ConnectionDetailPage() {
   const statusConfig = STATUS_CONFIG[connection.status] ?? STATUS_CONFIG.PENDING;
   const postTx = (connection.post as Record<string, unknown>).blockchainTx as string | null;
   const connTx = (connection as unknown as Record<string, unknown>).blockchainTx as string | null;
+  const completionTx = (connection as unknown as Record<string, unknown>).completionTx as string | null;
+  const ratingTx = (connection as unknown as Record<string, unknown>).ratingTx as string | null;
   const isGiver = session?.user?.id === connection.giverId;
   const otherParty = isGiver ? connection.requester : connection.giver;
   const isPostAuthor = session?.user?.id === connection.post.userId;
@@ -296,9 +363,15 @@ export default function ConnectionDetailPage() {
       </div>
 
       {/* Blockchain Proof — show whenever any tx exists */}
-      {(postTx || connTx) && (
+      {(postTx || connTx || completionTx || ratingTx || pollingForTx) && (
         <Card className="border-emerald-100">
           <CardContent className="p-4">
+            {pollingForTx && (
+              <div className="mb-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {lang === "ar" ? "جاري تسجيل العملية على البلوكتشين..." : "Recording transaction on blockchain..."}
+              </div>
+            )}
             <BlockchainProof
               steps={[
                 {
@@ -314,14 +387,74 @@ export default function ConnectionDetailPage() {
                 ...(connection.status === "COMPLETED"
                   ? [{
                       label: lang === "ar" ? "تم الإكمال" : "Completed",
-                      txHash: connTx,
+                      txHash: completionTx,
                       timestamp: connection.completedAt
                         ? new Date(connection.completedAt).toLocaleDateString()
                         : undefined,
                     }]
                   : []),
+                ...(ratingTx
+                  ? [{
+                      label: lang === "ar" ? "تم التقييم" : "Rated & Certified",
+                      txHash: ratingTx,
+                      timestamp: new Date(connection.updatedAt).toLocaleDateString(),
+                    }]
+                  : []),
               ]}
             />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Certificate Section — show for completed connections */}
+      {connection.status === "COMPLETED" && (
+        <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
+          <CardContent className="flex flex-col items-center gap-4 p-6">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+              <Award className="h-7 w-7 text-amber-600" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-gray-900">
+                {lang === "ar" ? "شهادة التطوع" : "Volunteer Certificate"}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {lang === "ar"
+                  ? "احصل على شهادة مُوثّقة على البلوكتشين لإثبات مساهمتك"
+                  : "Get a blockchain-verified certificate for your contribution"}
+              </p>
+            </div>
+            {certificateId ? (
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  onClick={() => window.open(`/api/certificates/${certificateId}/pdf`, "_blank")}
+                  className="bg-amber-600 text-white hover:bg-amber-700"
+                >
+                  <Download className="mr-1 h-4 w-4" />
+                  {lang === "ar" ? "تحميل PDF" : "Download PDF"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(`/certificates/verify?id=${certificateId}`, "_blank")}
+                  className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                >
+                  <ExternalLink className="mr-1 h-4 w-4" />
+                  {lang === "ar" ? "صفحة التحقق" : "Verify Page"}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={generateCertificate}
+                disabled={generatingCert}
+                className="bg-emerald-700 text-white hover:bg-emerald-800"
+              >
+                {generatingCert ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <Award className="mr-1 h-4 w-4" />
+                )}
+                {lang === "ar" ? "إصدار الشهادة" : "Generate Certificate"}
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}

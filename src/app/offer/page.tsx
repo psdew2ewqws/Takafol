@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   HandHeart, User, FileText, Loader2, ChevronLeft, ChevronRight,
-  BadgeCheck, Users, MapPin, ExternalLink, Radio, Zap,
+  BadgeCheck, Users, MapPin, ExternalLink, Radio, Zap, Heart, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,12 +44,46 @@ interface NahnoOpportunity {
   source?: "nahno" | "tua" | "volunteerworld" | "goabroad";
 }
 
+interface CharityProgram {
+  id: string;
+  title: string;
+  titleAr: string;
+  description: string | null;
+  descriptionAr: string | null;
+  capacity: number;
+  enrolled: number;
+  charity: {
+    id: string;
+    name: string;
+    nameAr: string;
+    logoUrl: string | null;
+  };
+}
+
 const SOURCE_STYLES = {
   nahno: { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200", label: "نَحْنُ" },
   tua: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200", label: "تكية أم علي" },
   volunteerworld: { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200", label: "Volunteer World" },
   goabroad: { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-200", label: "GoAbroad" },
 } as const;
+
+function SafeImage({ src, alt, className, fallback }: {
+  src: string;
+  alt: string;
+  className?: string;
+  fallback?: React.ReactNode;
+}) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return <>{fallback || null}</>;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => setBroken(true)}
+    />
+  );
+}
 
 export default function OfferHelpPage() {
   const router = useRouter();
@@ -59,6 +93,8 @@ export default function OfferHelpPage() {
   const [loading, setLoading] = useState(true);
   const [nahnoOpportunities, setNahnoOpportunities] = useState<NahnoOpportunity[]>([]);
   const [nahnoLoading, setNahnoLoading] = useState(true);
+  const [charityPrograms, setCharityPrograms] = useState<CharityProgram[]>([]);
+  const [programsLoading, setProgramsLoading] = useState(true);
   const [applyingId, setApplyingId] = useState<string | null>(null);
   const [applyResult, setApplyResult] = useState<Record<string, { success: boolean; message: string }>>({});
   const Arrow = lang === "ar" ? ChevronLeft : ChevronRight;
@@ -118,6 +154,19 @@ export default function OfferHelpPage() {
       }
     }
     fetchNahno();
+  }, []);
+
+  useEffect(() => {
+    async function fetchPrograms() {
+      try {
+        const res = await fetch("/api/programs");
+        const data = await res.json();
+        if (data.data) setCharityPrograms(data.data);
+      } finally {
+        setProgramsLoading(false);
+      }
+    }
+    fetchPrograms();
   }, []);
 
   if (sessionStatus === "loading") {
@@ -219,7 +268,16 @@ export default function OfferHelpPage() {
                         {/* Image */}
                         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
                           {opp.image ? (
-                            <img src={opp.image} alt={opp.title} className="h-full w-full object-cover" />
+                            <SafeImage
+                              src={opp.image}
+                              alt={opp.title}
+                              className="h-full w-full object-cover"
+                              fallback={
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <HandHeart size={24} className="text-gray-300" />
+                                </div>
+                              }
+                            />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center">
                               <HandHeart size={24} className="text-gray-300" />
@@ -250,7 +308,12 @@ export default function OfferHelpPage() {
 
                           <div className="mt-1.5 flex items-center gap-1.5">
                             {opp.orgLogo ? (
-                              <img src={opp.orgLogo} alt={opp.orgName} className="h-4 w-4 rounded-full object-cover" />
+                              <SafeImage
+                                src={opp.orgLogo}
+                                alt={opp.orgName}
+                                className="h-4 w-4 rounded-full object-cover"
+                                fallback={<div className="h-4 w-4 rounded-full bg-gray-200" />}
+                              />
                             ) : (
                               <div className="h-4 w-4 rounded-full bg-gray-200" />
                             )}
@@ -340,6 +403,115 @@ export default function OfferHelpPage() {
         )}
       </div>
 
+      {/* Charity Volunteer Programs */}
+      <div className="mb-6">
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
+            {t("charityPrograms")}
+          </h2>
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+            <Calendar size={8} />
+            {charityPrograms.length} {t("programs")}
+          </span>
+        </div>
+        <p className="mb-3 text-xs text-gray-400">{t("charityProgramsSubtitle")}</p>
+
+        {programsLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-xl" />
+            ))}
+          </div>
+        ) : charityPrograms.length === 0 ? (
+          <Card className="border-gray-200">
+            <CardContent className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">{t("noPrograms")}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {charityPrograms.map((prog) => {
+              const title = lang === "ar" ? prog.titleAr : prog.title;
+              const desc = lang === "ar"
+                ? (prog.descriptionAr || prog.description)
+                : (prog.description || prog.descriptionAr);
+              const charityName = lang === "ar" ? prog.charity.nameAr : prog.charity.name;
+              const fillPercent = prog.capacity > 0
+                ? Math.min(100, Math.round((prog.enrolled / prog.capacity) * 100))
+                : 0;
+              const isFull = prog.capacity > 0 && prog.enrolled >= prog.capacity;
+              const spotsLeft = prog.capacity > 0 ? prog.capacity - prog.enrolled : 0;
+
+              return (
+                <Link key={prog.id} href={`/offer/charities/${prog.charity.id}`}>
+                  <Card className={cn(
+                    "border-gray-200 transition-all hover:shadow-md hover:border-emerald-200",
+                    isFull && "opacity-60"
+                  )}>
+                    <CardContent className="p-3">
+                      <div className="flex gap-3">
+                        {/* Charity Logo */}
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden">
+                          {prog.charity.logoUrl ? (
+                            <SafeImage
+                              src={prog.charity.logoUrl}
+                              alt={charityName}
+                              className="h-10 w-10 object-contain p-0.5"
+                              fallback={<Heart size={20} className="text-emerald-600" />}
+                            />
+                          ) : (
+                            <Heart size={20} className="text-emerald-600" />
+                          )}
+                        </div>
+
+                        {/* Program Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-bold text-gray-900 leading-tight line-clamp-1">{title}</h3>
+                          <div className="mt-0.5 flex items-center gap-1.5">
+                            <span className="text-[11px] text-emerald-700 font-medium truncate">{charityName}</span>
+                          </div>
+                          {desc && (
+                            <p className="mt-0.5 text-[11px] text-gray-400 line-clamp-1">{desc}</p>
+                          )}
+
+                          <div className="mt-1.5 flex items-center gap-2">
+                            {prog.capacity > 0 && (
+                              <div className="flex-1 flex items-center gap-1.5">
+                                <Progress value={fillPercent} className="h-1.5 flex-1" />
+                                <span className={cn(
+                                  "text-[10px] font-medium whitespace-nowrap",
+                                  isFull ? "text-red-500" : "text-emerald-600"
+                                )}>
+                                  {prog.enrolled}/{prog.capacity}
+                                </span>
+                              </div>
+                            )}
+
+                            {!isFull && spotsLeft > 0 && (
+                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-200 text-emerald-700 shrink-0">
+                                {spotsLeft} {t("spotsLeft")}
+                              </Badge>
+                            )}
+
+                            {isFull && (
+                              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-red-200 text-red-500 shrink-0">
+                                {t("full")}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        <Arrow size={16} className="shrink-0 mt-3 text-gray-300" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Charities List */}
       <div>
         <h2 className="mb-3 text-sm font-bold text-gray-500 uppercase tracking-wider">{t("charityPlatforms")}</h2>
@@ -370,19 +542,18 @@ export default function OfferHelpPage() {
                       "flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50",
                       i < charities.length - 1 && "border-b border-gray-100"
                     )}>
-                      {charity.logoUrl ? (
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100 overflow-hidden">
-                          <img
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-gray-100 overflow-hidden">
+                        {charity.logoUrl ? (
+                          <SafeImage
                             src={charity.logoUrl}
                             alt={name}
                             className="h-10 w-10 object-contain p-0.5"
+                            fallback={<HandHeart size={18} className="text-emerald-600" />}
                           />
-                        </div>
-                      ) : (
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+                        ) : (
                           <HandHeart size={18} className="text-emerald-600" />
-                        </div>
-                      )}
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm font-bold text-gray-900 truncate">{name}</p>

@@ -64,6 +64,13 @@ contract TakafolTracker {
         uint256 timestamp
     );
 
+    event CertificateIssued(
+        string certificateId,
+        string recipientId,
+        bytes32 certHash,
+        uint256 timestamp
+    );
+
     // ========== MODIFIERS ==========
 
     modifier onlyOwner() {
@@ -139,5 +146,13 @@ contract TakafolTracker {
         uint8 requesterRating
     ) external onlyOwner {
         emit TaskCompleted(connectionId, giverRating, requesterRating, block.timestamp);
+    }
+
+    function logCertificate(
+        string memory certificateId,
+        string memory recipientId,
+        bytes32 certHash
+    ) external onlyOwner {
+        emit CertificateIssued(certificateId, recipientId, certHash, block.timestamp);
     }
 }
