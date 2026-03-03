@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Users,
   FileText,
   Link2,
   CheckCircle2,
-  Shield,
   Ban,
   Loader2,
   Search,
@@ -18,8 +16,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/components/providers/language-provider";
 
 interface AdminStats {
@@ -43,9 +39,8 @@ interface AdminUser {
   _count: { posts: number };
 }
 
-export default function AdminPage() {
-  const router = useRouter();
-  const { data: session, status: sessionStatus } = useSession();
+export default function AdminDashboardPage() {
+  const { data: session } = useSession();
   const { t } = useLanguage();
 
   const STAT_ITEMS = [
@@ -62,16 +57,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [togglingBan, setTogglingBan] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (sessionStatus === "unauthenticated") {
-      router.push("/login");
-      return;
-    }
-    if (sessionStatus === "authenticated" && session?.user?.role !== "ADMIN") {
-      router.push("/");
-    }
-  }, [sessionStatus, session, router]);
 
   useEffect(() => {
     if (!session || session.user?.role !== "ADMIN") return;
@@ -127,32 +112,19 @@ export default function AdminPage() {
     }
   }
 
-  if (sessionStatus === "loading" || loading) {
+  if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="flex min-h-[30vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
       </div>
     );
   }
 
-  if (session?.user?.role !== "ADMIN") return null;
-
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
-          <Shield className="h-5 w-5 text-emerald-700" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-emerald-900">{t("adminPanel")}</h1>
-          <p className="text-sm text-muted-foreground">{t("adminSubtitle")}</p>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       {/* Stats Grid */}
       {stats && (
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {STAT_ITEMS.map((item) => (
             <Card key={item.key} className="border-emerald-100">
               <CardContent className="flex items-center gap-3 p-4">
@@ -177,7 +149,6 @@ export default function AdminPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Search */}
           <div className="mb-4 flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -197,7 +168,6 @@ export default function AdminPage() {
             </Button>
           </div>
 
-          {/* User List */}
           <div className="space-y-3">
             {users.map((user) => (
               <div

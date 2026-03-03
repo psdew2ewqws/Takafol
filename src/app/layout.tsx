@@ -4,6 +4,7 @@ import { SessionProvider } from "@/components/providers/session-provider";
 import { LanguageProvider } from "@/components/providers/language-provider";
 import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { Toaster } from "@/components/ui/sonner";
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
 import "./globals.css";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
               {children}
             </main>
             <BottomNav />
+            <Toaster position="top-center" richColors />
           </LanguageProvider>
         </SessionProvider>
       </body>

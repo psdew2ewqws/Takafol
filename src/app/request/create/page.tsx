@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { HelpCircle, Loader2, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,8 +15,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/components/providers/language-provider";
+import { toast } from "sonner";
 import type { Category, District, UrgencyLevel } from "@/types";
+
+function useAiClassify(
+  description: string,
+  categories: Category[],
+  setCategoryId: (id: string) => void,
+  userOverrode: React.MutableRefObject<boolean>,
+) {
+  const [aiSuggestion, setAiSuggestion] = useState<{ categoryId: string; confidence: number } | null>(null);
+  const [classifying, setClassifying] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const classify = useCallback(
+    (text: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (text.trim().length < 10) {
+        setAiSuggestion(null);
+        return;
+      }
+      setClassifying(true);
+      debounceRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch("/api/ai/classify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+          const data = await res.json();
+          if (data.data?.categoryId && data.data.confidence > 0) {
+            setAiSuggestion(data.data);
+            if (!userOverrode.current) {
+              setCategoryId(data.data.categoryId);
+            }
+          }
+        } catch {
+          // silently fail
+        } finally {
+          setClassifying(false);
+        }
+      }, 500);
+    },
+    [categories, setCategoryId, userOverrode],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  return { aiSuggestion, classifying, classify };
+}
 
 export default function CreateRequestPage() {
   const router = useRouter();
@@ -31,7 +84,8 @@ export default function CreateRequestPage() {
   const [districtId, setDistrictId] = useState("");
   const [urgency, setUrgency] = useState<UrgencyLevel>("MEDIUM");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const userOverrode = useRef(false);
+  const { aiSuggestion, classifying, classify } = useAiClassify(description, categories, setCategoryId, userOverrode);
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -54,14 +108,13 @@ export default function CreateRequestPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
 
     if (!description.trim() || !districtId) {
-      setError(t("unexpectedError"));
+      toast.error(t("unexpectedError"));
       return;
     }
     if (description.length < 10) {
-      setError(`${t("charsMin")}: 10`);
+      toast.error(`${t("charsMin")}: 10`);
       return;
     }
 
@@ -81,12 +134,13 @@ export default function CreateRequestPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || t("unexpectedError"));
+        toast.error(data.error || t("unexpectedError"));
         return;
       }
+      toast.success(t("postPublished"));
       router.push("/request/offers");
     } catch {
-      setError(t("unexpectedError"));
+      toast.error(t("unexpectedError"));
     } finally {
       setLoading(false);
     }
@@ -131,7 +185,7 @@ export default function CreateRequestPage() {
               <Textarea
                 id="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => { setDescription(e.target.value); classify(e.target.value); }}
                 placeholder={t("descriptionRequestPlaceholder")}
                 rows={5}
                 maxLength={2000}
@@ -176,7 +230,25 @@ export default function CreateRequestPage() {
             {/* Category (optional) */}
             <div className="space-y-2">
               <Label htmlFor="category">{t("categoryOptional")}</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
+              {(classifying || aiSuggestion) && (
+                <div className="flex items-center gap-2 text-xs">
+                  {classifying ? (
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" /> {t("classifying")}
+                    </span>
+                  ) : aiSuggestion && aiSuggestion.confidence > 0 ? (
+                    <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      {t("aiSuggests")}: {categories.find((c) => c.id === aiSuggestion.categoryId)?.icon}{" "}
+                      {lang === "ar"
+                        ? categories.find((c) => c.id === aiSuggestion.categoryId)?.nameAr
+                        : categories.find((c) => c.id === aiSuggestion.categoryId)?.nameEn}{" "}
+                      ({aiSuggestion.confidence}%)
+                    </Badge>
+                  ) : null}
+                </div>
+              )}
+              <Select value={categoryId} onValueChange={(v) => { userOverrode.current = true; setCategoryId(v); }}>
                 <SelectTrigger id="category">
                   <SelectValue placeholder={t("selectCategory")} />
                 </SelectTrigger>
@@ -189,12 +261,6 @@ export default function CreateRequestPage() {
                 </SelectContent>
               </Select>
             </div>
-
-            {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
 
             <Button
               type="submit"
