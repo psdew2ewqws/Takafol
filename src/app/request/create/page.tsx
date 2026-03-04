@@ -333,7 +333,6 @@ export default function CreateRequestPage() {
                   </div>
                 </div>
               </div>
-              )}
             </div>
 
             {/* Urgency */}
