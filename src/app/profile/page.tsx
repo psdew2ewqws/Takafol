@@ -71,12 +71,23 @@ export default function ProfilePage() {
   const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [postsLoaded, setPostsLoaded] = useState(false);
   const [connectionsLoaded, setConnectionsLoaded] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
       router.push("/login");
     }
   }, [sessionStatus, router]);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
+    }
+  }, []);
 
   useEffect(() => {
     if (!session) return;
@@ -330,7 +341,7 @@ export default function ProfilePage() {
           ) : (
             <div className="grid gap-3">
               {myPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
+                <PostCard key={post.id} post={post} userCoords={userCoords} />
               ))}
             </div>
           )}

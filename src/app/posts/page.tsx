@@ -43,6 +43,7 @@ function PostsContent() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const [tab, setTab] = useState(searchParams.get("type") || "all");
   const [categoryId, setCategoryId] = useState(searchParams.get("categoryId") || ALL_VALUE);
@@ -62,6 +63,16 @@ function PostsContent() {
       if (distData.data) setDistricts(distData.data);
     }
     fetchLookups();
+  }, []);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
+    }
   }, []);
 
   const fetchPosts = useCallback(async () => {
@@ -201,7 +212,7 @@ function PostsContent() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} userCoords={userCoords} />
           ))}
         </div>
       )}

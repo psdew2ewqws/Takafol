@@ -425,6 +425,7 @@ export const translations = {
   removeImage: { ar: "إزالة الصورة", en: "Remove image" },
   takePhoto: { ar: "التقط صورة", en: "Take Photo" },
   chooseFile: { ar: "اختر ملف", en: "Choose File" },
+  changePhoto: { ar: "تغيير الصورة", en: "Change Photo" },
 
   // ─── Location ────────────────────────────────────────────
   myLocation: { ar: "موقعي", en: "My Location" },

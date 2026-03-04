@@ -284,60 +284,56 @@ export default function CreateRequestPage() {
             {/* Image Upload (optional) */}
             <div className="space-y-2">
               <Label>{t("addPhotoOptional")}</Label>
-              {imagePreview ? (
-                <div className="relative overflow-hidden rounded-xl">
-                  <img src={imagePreview} alt="" className="h-48 w-full rounded-xl object-cover" />
-                  {imageUploading && (
-                    <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40">
-                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+              <div className="flex items-center gap-3">
+                {imagePreview && (
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-200">
+                    <img src={imagePreview} alt="" className="h-full w-full object-cover" />
+                    {imageUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <Loader2 className="h-4 w-4 animate-spin text-white" />
+                      </div>
+                    )}
+                    {!imageUploading && (
+                      <button
+                        type="button"
+                        onClick={clearImage}
+                        className="absolute end-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+                        aria-label={t("removeImage")}
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                <div className={`grid flex-1 gap-2 ${imagePreview ? "grid-cols-1" : "grid-cols-2"}`}>
+                  {!imagePreview && (
+                    <div className="relative flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50 px-4 py-5 transition-colors hover:bg-amber-100">
+                      <Camera className="h-5 w-5 text-amber-600" />
+                      <span className="text-xs font-medium text-amber-700">{t("takePhoto")}</span>
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+                      />
                     </div>
                   )}
-                  {!imageUploading && (
-                    <button
-                      type="button"
-                      onClick={clearImage}
-                      className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-sm font-bold text-white hover:bg-black/70"
-                      aria-label={t("removeImage")}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50 px-4 py-5 transition-colors hover:bg-amber-100"
-                  >
-                    <Camera className="h-5 w-5 text-amber-600" />
-                    <span className="text-xs font-medium text-amber-700">{t("takePhoto")}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-5 transition-colors hover:bg-gray-100"
-                  >
+                  <div className="relative flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-5 transition-colors hover:bg-gray-100">
                     <ImageIcon className="h-5 w-5 text-gray-500" />
-                    <span className="text-xs font-medium text-gray-600">{t("chooseFile")}</span>
-                  </button>
+                    <span className="text-xs font-medium text-gray-600">{imagePreview ? t("changePhoto") : t("chooseFile")}</span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                      onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+                    />
+                  </div>
                 </div>
+              </div>
               )}
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
-              />
             </div>
 
             {/* Urgency */}

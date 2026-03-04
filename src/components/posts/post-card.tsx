@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Clock, Users, Navigation } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { MapPin, Clock, Users, Navigation, ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatRelativeTime, getUrgencyConfig, truncateText, getDistanceKm, formatDistance } from "@/lib/format";
@@ -20,6 +19,7 @@ export function PostCard({ post, userCoords }: PostCardProps) {
   const { lang, t } = useLanguage();
   const urgency = getUrgencyConfig(post.urgency);
   const isOffer = post.type === "OFFER";
+  const imageUrl = (post as PostWithRelations & { imageUrl?: string | null }).imageUrl;
 
   const postWithLocation = post as PostWithRelations & { latitude?: number | null; longitude?: number | null };
   const distance =
@@ -36,23 +36,38 @@ export function PostCard({ post, userCoords }: PostCardProps) {
 
   return (
     <Link href={`/posts/${post.id}`}>
-      <Card className="group overflow-hidden border-emerald-100 transition-all hover:border-emerald-200 hover:shadow-md">
+      <div className="group flex overflow-hidden rounded-xl border border-gray-200 bg-white transition-all duration-200 hover:border-gray-300 hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)] active:scale-[0.99]">
         {/* Image thumbnail */}
-        {(post as PostWithRelations & { imageUrl?: string | null }).imageUrl && (
-          <div className="h-40 w-full overflow-hidden">
+        {imageUrl ? (
+          <div className="relative w-28 shrink-0 overflow-hidden bg-gray-100 sm:w-32">
             <img
-              src={(post as PostWithRelations & { imageUrl?: string | null }).imageUrl!}
+              src={imageUrl}
               alt=""
-              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             />
           </div>
+        ) : (
+          <div className="flex w-16 shrink-0 items-center justify-center bg-gray-50/80 sm:w-20">
+            <div className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full",
+              isOffer ? "bg-emerald-100" : "bg-amber-100",
+            )}>
+              {post.category.icon ? (
+                <span className="text-lg">{post.category.icon}</span>
+              ) : (
+                <ImageIcon className={cn("h-4 w-4", isOffer ? "text-emerald-500" : "text-amber-500")} />
+              )}
+            </div>
+          </div>
         )}
-        <CardContent className="p-4">
-          {/* Header: type badge + urgency */}
-          <div className="mb-3 flex items-start justify-between gap-2">
+
+        {/* Content */}
+        <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
+          {/* Top row: badges */}
+          <div className="mb-2 flex items-center gap-2">
             <Badge
               className={cn(
-                "text-xs font-medium",
+                "text-[10px] font-semibold px-2 py-0",
                 isOffer
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                   : "border-amber-200 bg-amber-50 text-amber-700",
@@ -63,66 +78,65 @@ export function PostCard({ post, userCoords }: PostCardProps) {
             </Badge>
             <Badge
               variant="outline"
-              className={cn("text-xs", urgency.color, urgency.bgColor, urgency.borderColor)}
+              className={cn("text-[10px] px-2 py-0", urgency.color, urgency.bgColor, urgency.borderColor)}
             >
               {urgencyLabel[post.urgency] || urgency.label}
             </Badge>
-          </div>
-
-          {/* Category + District */}
-          <div className="mb-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              {post.category.icon} {lang === "ar" ? post.category.nameAr : post.category.nameEn}
-            </span>
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {lang === "ar" ? post.district.nameAr : post.district.nameEn}
-            </span>
             {distance !== null && (
-              <span className="flex items-center gap-1 font-medium text-emerald-600">
+              <span className="ms-auto flex items-center gap-1 text-[11px] font-medium text-emerald-600">
                 <Navigation className="h-3 w-3" />
                 {formatDistance(distance)}
               </span>
             )}
           </div>
 
+          {/* Meta: category + district */}
+          <div className="mb-1.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span>{post.category.icon} {lang === "ar" ? post.category.nameAr : post.category.nameEn}</span>
+            <span className="text-gray-300">·</span>
+            <span className="flex items-center gap-0.5">
+              <MapPin className="h-2.5 w-2.5" />
+              {lang === "ar" ? post.district.nameAr : post.district.nameEn}
+            </span>
+          </div>
+
           {/* Description */}
-          <p className="mb-3 text-sm leading-relaxed text-gray-700">
-            {truncateText(post.description)}
+          <p className="mb-2 line-clamp-2 text-sm leading-snug text-gray-700 group-hover:text-gray-900">
+            {post.description}
           </p>
 
-          {/* Blockchain verification */}
+          {/* Blockchain */}
           {post.blockchainTx && (
-            <div className="mb-3">
+            <div className="mb-2">
               <BlockchainBadge txHash={post.blockchainTx} size="sm" />
             </div>
           )}
 
-          {/* Footer: user + time + connections */}
-          <div className="flex items-center justify-between border-t border-gray-50 pt-3">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="bg-emerald-100 text-xs text-emerald-700">
-                  {post.user.name?.charAt(0) || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-xs text-muted-foreground">{post.user.name}</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              {post._count && post._count.connections > 0 && (
-                <span className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
+          {/* Footer */}
+          <div className="mt-auto flex items-center gap-2 text-[11px] text-muted-foreground">
+            <Avatar className="h-5 w-5">
+              <AvatarFallback className="bg-emerald-100 text-[10px] text-emerald-700">
+                {post.user.name?.charAt(0) || "?"}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate font-medium text-gray-600">{post.user.name}</span>
+            <span className="text-gray-300">·</span>
+            <span className="flex items-center gap-0.5 shrink-0">
+              <Clock className="h-2.5 w-2.5" />
+              {formatRelativeTime(post.createdAt)}
+            </span>
+            {post._count && post._count.connections > 0 && (
+              <>
+                <span className="text-gray-300">·</span>
+                <span className="flex items-center gap-0.5 shrink-0">
+                  <Users className="h-2.5 w-2.5" />
                   {post._count.connections}
                 </span>
-              )}
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatRelativeTime(post.createdAt)}
-              </span>
-            </div>
+              </>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </Link>
   );
 }

@@ -184,7 +184,7 @@ export default function HomePage() {
       <AnimatePresence>
         {activePopup && (
           <motion.div
-            className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center pb-6 sm:pb-0 ${activeView ? "px-2 sm:px-4" : "px-4"}`}
+            className={`fixed inset-0 z-[110] flex items-end sm:items-center justify-center pb-6 sm:pb-0 ${activeView ? "px-2 sm:px-4" : "px-4"}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

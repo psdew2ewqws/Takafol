@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, SlidersHorizontal, Loader2, Plus, Sparkles, Heart, BadgeCheck, Users, DollarSign, Calendar, Copy, Check, CreditCard, Building2, MapPin, ExternalLink, Radio, HandHeart, ImagePlus, Upload } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2, Plus, Sparkles, Heart, BadgeCheck, Users, DollarSign, Calendar, Copy, Check, CreditCard, Building2, MapPin, ExternalLink, Radio, HandHeart, ImagePlus, Upload, Camera, X, ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,17 @@ export function InlineBrowseOffers() {
   const [districtId, setDistrictId] = useState(ALL_VALUE);
   const [urgency, setUrgency] = useState(ALL_VALUE);
   const [search, setSearch] = useState("");
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
+    }
+  }, []);
 
   useEffect(() => {
     Promise.all([fetch("/api/categories"), fetch("/api/districts")])
@@ -157,7 +169,7 @@ export function InlineBrowseOffers() {
       ) : posts.length === 0 ? (
         <div className="py-10 text-center"><p className="text-base text-gray-400">{t("noOffersNow")}</p></div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} />)}</div>
+        <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} userCoords={userCoords} />)}</div>
       )}
     </div>
   );
@@ -177,6 +189,24 @@ export function InlineCreateRequest({ onSuccess }: { onSuccess?: () => void }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Location state
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+
+  // Image upload state
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // AI classification state
+  const [aiSuggestion, setAiSuggestion] = useState<{ categoryId: string; confidence: number } | null>(null);
+  const [classifying, setClassifying] = useState(false);
+  const classifyRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const userOverrode = useRef(false);
+
   useEffect(() => {
     Promise.all([fetch("/api/categories"), fetch("/api/districts")])
       .then(([catRes, distRes]) => Promise.all([catRes.json(), distRes.json()]))
@@ -186,11 +216,80 @@ export function InlineCreateRequest({ onSuccess }: { onSuccess?: () => void }) {
       });
   }, []);
 
+  useEffect(() => {
+    return () => { if (classifyRef.current) clearTimeout(classifyRef.current); };
+  }, []);
+
+  function classifyText(text: string) {
+    if (classifyRef.current) clearTimeout(classifyRef.current);
+    if (text.trim().length < 10) { setAiSuggestion(null); return; }
+    setClassifying(true);
+    classifyRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/ai/classify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json();
+        if (data.data?.categoryId && data.data.confidence > 0) {
+          setAiSuggestion(data.data);
+          if (!userOverrode.current) setCategoryId(data.data.categoryId);
+        }
+      } catch { /* silently fail */ }
+      finally { setClassifying(false); }
+    }, 500);
+  }
+
+  function requestLocation() {
+    if (!navigator.geolocation) { toast.error(t("locationUnavailable")); return; }
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setLocationLoading(false);
+        toast.success(t("locationDetected"));
+      },
+      (err) => {
+        setLocationLoading(false);
+        toast.error(err.code === err.PERMISSION_DENIED ? t("locationDenied") : t("locationFailed"));
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  async function handleImageUpload(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error("Max 10MB"); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+    setImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", "takafol_unsigned");
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: "POST", body: formData },
+      );
+      const data = await res.json();
+      if (data.secure_url) { setImageUrl(data.secure_url); toast.success(t("imageUploaded")); }
+      else throw new Error("No URL returned");
+    } catch {
+      toast.error(t("imageUploadFailed"));
+      setImagePreview(null);
+      setImageUrl(null);
+    } finally { setImageUploading(false); }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!description.trim() || !districtId) { setError(t("unexpectedError")); return; }
     if (description.length < 10) { setError(`${t("charsMin")}: 10`); return; }
+    if (latitude === null || longitude === null) { setError(t("locationRequired")); return; }
     setLoading(true);
     try {
       const res = await fetch("/api/posts", {
@@ -201,6 +300,8 @@ export function InlineCreateRequest({ onSuccess }: { onSuccess?: () => void }) {
           description: description.trim(),
           categoryId: categoryId || categories[0]?.id,
           districtId, urgency,
+          ...(latitude !== null && longitude !== null ? { latitude, longitude } : {}),
+          ...(imageUrl ? { imageUrl } : {}),
         }),
       });
       const data = await res.json();
@@ -229,10 +330,46 @@ export function InlineCreateRequest({ onSuccess }: { onSuccess?: () => void }) {
         <h2 className="text-2xl font-bold text-amber-900">{t("requestHelpFormTitle")}</h2>
         <p className="text-sm text-gray-500 mt-1">{t("requestHelpFormSubtitle")}</p>
       </div>
+      {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="inline-desc" className="text-sm font-medium">{t("explainRequest")}</Label>
-        <Textarea id="inline-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("descriptionRequestPlaceholder")} rows={5} maxLength={2000} className="resize-none text-base" />
+        <Textarea id="inline-desc" value={description} onChange={(e) => { setDescription(e.target.value); classifyText(e.target.value); }} placeholder={t("descriptionRequestPlaceholder")} rows={5} maxLength={2000} className="resize-none text-base" />
         <p className="text-xs text-gray-400">{description.length}/2000</p>
+      </div>
+      {/* Image Upload */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">{t("addPhotoOptional")}</Label>
+        <div className="flex items-center gap-3">
+          {imagePreview && (
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-200">
+              <img src={imagePreview} alt="" className="h-full w-full object-cover" />
+              {imageUploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                </div>
+              )}
+              {!imageUploading && (
+                <button type="button" onClick={() => { setImageUrl(null); setImagePreview(null); }} className="absolute end-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70" aria-label={t("removeImage")}>
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              )}
+            </div>
+          )}
+          <div className={`grid flex-1 gap-2 ${imagePreview ? "grid-cols-1" : "grid-cols-2"}`}>
+            {!imagePreview && (
+              <div className="relative flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50 px-4 py-4 transition-colors hover:bg-amber-100">
+                <Camera className="h-5 w-5 text-amber-600" />
+                <span className="text-xs font-medium text-amber-700">{t("takePhoto")}</span>
+                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="absolute inset-0 cursor-pointer opacity-0" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
+              </div>
+            )}
+            <div className="relative flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-4 transition-colors hover:bg-gray-100">
+              <ImageIcon className="h-5 w-5 text-gray-500" />
+              <span className="text-xs font-medium text-gray-600">{imagePreview ? t("changePhoto") : t("chooseFile")}</span>
+              <input ref={fileInputRef} type="file" accept="image/*" className="absolute inset-0 cursor-pointer opacity-0" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
+            </div>
+          </div>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -257,9 +394,41 @@ export function InlineCreateRequest({ onSuccess }: { onSuccess?: () => void }) {
           </Select>
         </div>
       </div>
+      {/* Location */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">{t("myLocation")} *</Label>
+        {latitude !== null && longitude !== null ? (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+            <MapPin className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span className="flex-1 text-sm text-emerald-800">{latitude.toFixed(5)}, {longitude.toFixed(5)}</span>
+            <button type="button" onClick={() => { setLatitude(null); setLongitude(null); }} className="rounded-full p-0.5 text-emerald-500 hover:bg-emerald-100 hover:text-emerald-700" aria-label={t("removeLocation")}>
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <Button type="button" variant="outline" onClick={requestLocation} disabled={locationLoading} className="w-full justify-center gap-2 border-dashed h-11">
+            {locationLoading ? (<><Loader2 className="h-4 w-4 animate-spin" />{t("locationLoading")}</>) : (<><MapPin className="h-4 w-4" />{t("detectLocation")}</>)}
+          </Button>
+        )}
+      </div>
+      {/* Category with AI */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">{t("categoryOptional")}</Label>
-        <Select value={categoryId} onValueChange={setCategoryId}>
+        {(classifying || aiSuggestion) && (
+          <div className="flex items-center gap-2 text-xs">
+            {classifying ? (
+              <span className="flex items-center gap-1 text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> {t("classifying")}</span>
+            ) : aiSuggestion && aiSuggestion.confidence > 0 ? (
+              <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 gap-1">
+                <Sparkles className="h-3 w-3" />
+                {t("aiSuggests")}: {categories.find((c) => c.id === aiSuggestion.categoryId)?.icon}{" "}
+                {lang === "ar" ? categories.find((c) => c.id === aiSuggestion.categoryId)?.nameAr : categories.find((c) => c.id === aiSuggestion.categoryId)?.nameEn}{" "}
+                ({aiSuggestion.confidence}%)
+              </Badge>
+            ) : null}
+          </div>
+        )}
+        <Select value={categoryId} onValueChange={(v) => { userOverrode.current = true; setCategoryId(v); }}>
           <SelectTrigger className="h-11 text-sm"><SelectValue placeholder={t("selectCategory")} /></SelectTrigger>
           <SelectContent>
             {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.icon} {lang === "ar" ? c.nameAr : c.nameEn}</SelectItem>)}
@@ -282,6 +451,17 @@ export function InlinePersonalOffer({ onCreateOffer }: { onCreateOffer?: () => v
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [posts, setPosts] = useState<PostWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/categories").then((r) => r.json()).then((d) => { if (d.data) setCategories(d.data); });
@@ -328,7 +508,7 @@ export function InlinePersonalOffer({ onCreateOffer }: { onCreateOffer?: () => v
           <Button size="default" onClick={() => onCreateOffer ? onCreateOffer() : router.push("/offer/personal/create")} className="mt-4 bg-amber-600 text-white hover:bg-amber-700 text-sm">{t("createOffer")}</Button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} />)}</div>
+        <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} userCoords={userCoords} />)}</div>
       )}
     </div>
   );
@@ -347,6 +527,17 @@ export function InlineBrowseRequests() {
   const [districtId, setDistrictId] = useState(ALL_VALUE);
   const [urgency, setUrgency] = useState(ALL_VALUE);
   const [search, setSearch] = useState("");
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
+    }
+  }, []);
 
   // Nahno opportunities (orgs requesting volunteers)
   const [nahnoOpportunities, setNahnoOpportunities] = useState<NahnoOpportunity[]>([]);
@@ -481,7 +672,7 @@ export function InlineBrowseRequests() {
             {lang === "ar" ? "طلبات من مستخدمي تكافل" : "Requests from Takafol Users"}
           </p>
           <p className="text-sm text-gray-400">{total} {t("requestsCount")}</p>
-          <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} />)}</div>
+          <div className="grid gap-4 sm:grid-cols-2">{posts.map((post) => <PostCard key={post.id} post={post} userCoords={userCoords} />)}</div>
         </div>
       )}
 
