@@ -193,7 +193,7 @@ export default function HomePage() {
             {/* Backdrop */}
             <motion.div
               className="absolute inset-0 bg-black/50 backdrop-blur-[6px]"
-              onClick={closePopup}
+              onPointerDown={(e) => { if (e.target === e.currentTarget) closePopup(); }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
